@@ -1,23 +1,10 @@
-import { useState, useMemo } from "react"
-import { motion } from "framer-motion"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import {
-    format,
-    addMonths,
-    subMonths,
-    startOfMonth,
-    endOfMonth,
-    eachDayOfInterval,
-    isSameMonth,
-    isSameDay,
-    startOfWeek,
-    endOfWeek,
-    isBefore,
-    startOfDay
-} from "date-fns"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, isToday, isBefore, startOfDay } from "date-fns"
+import { cn, getDayName } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { cn, formatDate } from "@/lib/utils"
 import type { DailyLog, Holiday, InternSettings } from "@/types"
 
 interface InteractiveCalendarProps {
@@ -28,208 +15,265 @@ interface InteractiveCalendarProps {
     onSelectDate: (date: Date) => void
 }
 
+const legends = [
+    { label: "Today", className: "border-2 border-amber bg-amber/10", icon: null },
+    { label: "Holiday", className: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", icon: "★" },
+    { label: "Logged", className: "bg-green/10 border-2 border-green text-green", icon: "✓" },
+    { label: "Off", className: "bg-muted/40 text-muted-foreground/60", icon: null },
+]
+
 export function InteractiveCalendar({
     logs,
     holidays,
     settings,
     selectedDate,
-    onSelectDate
+    onSelectDate,
 }: InteractiveCalendarProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
+    const [direction, setDirection] = useState(0)
 
     const monthStart = startOfMonth(currentMonth)
     const monthEnd = endOfMonth(currentMonth)
-    const calendarStart = startOfWeek(monthStart)
-    const calendarEnd = endOfWeek(monthEnd)
-    const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
-    const today = new Date()
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
+
     const startDate = settings.startDate ? startOfDay(new Date(settings.startDate)) : null
+    const startDayOfWeek = getDay(monthStart)
 
-    const weekDays = ["S", "M", "T", "W", "T", "F", "S"]
+    const prevMonth = () => {
+        setDirection(-1)
+        setCurrentMonth(subMonths(currentMonth, 1))
+    }
 
-    // Create lookup maps for quick access
-    const logsMap = useMemo(() => {
-        const map = new Map<string, DailyLog>()
-        logs.forEach((log) => {
-            map.set(formatDate(new Date(log.date)), log)
-        })
-        return map
-    }, [logs])
+    const nextMonth = () => {
+        setDirection(1)
+        setCurrentMonth(addMonths(currentMonth, 1))
+    }
 
-    const holidaysMap = useMemo(() => {
-        const map = new Map<string, Holiday>()
-        holidays.forEach((h) => {
-            map.set(h.date, h)
-        })
-        return map
-    }, [holidays])
-
-    const getDayStatus = (date: Date) => {
-        const dateStr = formatDate(date)
-        const log = logsMap.get(dateStr)
-        const holiday = holidaysMap.get(dateStr)
-        const dayOfWeek = date.getDay()
-        const isWorkday = settings.workDays.includes(dayOfWeek)
-        const isToday = isSameDay(date, today)
-        const isBeforeStart = startDate ? isBefore(startOfDay(date), startDate) : false
-        const isHolidayDay = settings.excludeHolidays && !!holiday
-
-        // A day is inactive if:
-        // 1. It's before the start date, OR
-        // 2. It's not a workday (not in workDays array), OR
-        // 3. It's a holiday (when excludeHolidays is true)
-        const isInactive = isBeforeStart || !isWorkday || isHolidayDay
-
-        return {
-            log,
-            holiday,
-            isWorkday,
-            isToday,
-            isHoliday: isHolidayDay,
-            isScheduled: log?.status === "scheduled",
-            isCompleted: log?.status === "completed",
-            isOff: !isWorkday,
-            isBeforeStart,
-            isInactive,
-            holidayName: holiday?.name,
+    const goToToday = () => {
+        if (!isSameMonth(currentMonth, new Date())) {
+            setDirection(new Date() > currentMonth ? 1 : -1)
+            setCurrentMonth(new Date())
         }
     }
 
-    const handleDateClick = (date: Date, status: ReturnType<typeof getDayStatus>) => {
-        // Don't allow clicking on inactive dates
-        if (status.isInactive) return
-        onSelectDate(date)
+    const isLogged = (date: Date) => {
+        return logs.some((log) => isSameDay(new Date(log.date), date))
+    }
+
+    const isHoliday = (date: Date) => {
+        const dateStr = format(date, "yyyy-MM-dd")
+        return holidays.find((h) => h.date === dateStr)
+    }
+
+    const isWorkday = (date: Date) => {
+        const dayOfWeek = getDay(date)
+        return settings.workDays.includes(dayOfWeek)
+    }
+
+    const isBeforeStartDate = (date: Date) => {
+        if (!startDate) return false
+        return isBefore(startOfDay(date), startDate)
+    }
+
+    const getDayStatus = (date: Date) => {
+        if (isBeforeStartDate(date)) return "before-start"
+        if (!isWorkday(date)) return "non-workday"
+
+        const holiday = isHoliday(date)
+        if (holiday && settings.excludeHolidays) return "holiday"
+        if (isLogged(date)) return "logged"
+        if (isToday(date)) return "today"
+
+        return "active"
+    }
+
+    const weekDayHeaders = [0, 1, 2, 3, 4, 5, 6]
+
+    const calendarVariants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? 50 : -50,
+            opacity: 0,
+        }),
+        center: {
+            x: 0,
+            opacity: 1,
+        },
+        exit: (direction: number) => ({
+            x: direction < 0 ? 50 : -50,
+            opacity: 0,
+        }),
     }
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
+            whileHover={{ scale: 1.005 }}
+            transition={{ duration: 0.2 }}
         >
-            <Card className="overflow-hidden">
-                <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-accent/5">
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-border/50 overflow-hidden">
+                <CardHeader className="pb-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-2xl font-bold">
-                            {format(currentMonth, "MMMM yyyy")}
+                        <CardTitle className="text-xl font-bold flex items-center gap-2">
+                            <motion.div whileHover={{ rotate: 15 }} transition={{ duration: 0.2 }}>
+                                <Calendar className="h-5 w-5 text-primary" />
+                            </motion.div>
+                            Calendar
                         </CardTitle>
-                        <div className="flex gap-1">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                                className="text-primary hover:bg-primary/10"
-                            >
-                                <ChevronLeft className="h-5 w-5" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                                className="text-primary hover:bg-primary/10"
-                            >
-                                <ChevronRight className="h-5 w-5" />
-                            </Button>
+                        <div className="flex items-center gap-2">
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={goToToday}
+                                    className="h-8 px-2 text-xs font-semibold hover:bg-amber hover:text-white transition-colors duration-200 hidden md:flex"
+                                >
+                                    Today
+                                </Button>
+                            </motion.div>
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                <Button variant="ghost" size="icon" onClick={prevMonth} className="h-8 w-8">
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                            </motion.div>
+                            <AnimatePresence mode="wait" custom={direction}>
+                                <motion.span
+                                    key={format(currentMonth, "MMM-yyyy")}
+                                    custom={direction}
+                                    variants={calendarVariants}
+                                    initial="enter"
+                                    animate="center"
+                                    exit="exit"
+                                    transition={{ duration: 0.2 }}
+                                    className="text-sm font-medium min-w-[120px] text-center"
+                                >
+                                    {format(currentMonth, "MMMM yyyy")}
+                                </motion.span>
+                            </AnimatePresence>
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                <Button variant="ghost" size="icon" onClick={nextMonth} className="h-8 w-8">
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </motion.div>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="pt-4">
-                    {/* Week days header */}
-                    <div className="grid grid-cols-7 gap-2 mb-2">
-                        {weekDays.map((day, i) => (
-                            <div
-                                key={i}
-                                className={cn(
-                                    "text-center text-sm font-medium py-2",
-                                    settings.workDays.includes(i)
-                                        ? "text-foreground"
-                                        : "text-muted-foreground/50"
-                                )}
+                <CardContent className="pt-4 space-y-4">
+                    <div>
+                        {/* Weekday Headers */}
+                        <div className="grid grid-cols-7 gap-1 mb-2">
+                            {weekDayHeaders.map((day) => {
+                                const isActive = settings.workDays.includes(day)
+                                return (
+                                    <div
+                                        key={day}
+                                        className={cn(
+                                            "text-center text-xs font-semibold py-2 rounded transition-colors duration-200",
+                                            isActive
+                                                ? "text-primary bg-primary/10"
+                                                : "text-muted-foreground/50"
+                                        )}
+                                    >
+                                        {getDayName(day)}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        {/* Calendar Grid */}
+                        <AnimatePresence mode="wait" custom={direction}>
+                            <motion.div
+                                key={format(currentMonth, "MMM-yyyy")}
+                                custom={direction}
+                                variants={calendarVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ duration: 0.2 }}
+                                className="grid grid-cols-7 gap-1"
                             >
-                                {day}
-                            </div>
-                        ))}
+                                {/* Empty cells for days before month start */}
+                                {Array.from({ length: startDayOfWeek }).map((_, i) => (
+                                    <div key={`empty-${i}`} className="aspect-square" />
+                                ))}
+
+                                {/* Day cells */}
+                                {days.map((day, index) => {
+                                    const status = getDayStatus(day)
+                                    const holiday = isHoliday(day)
+                                    const isSelected = selectedDate && isSameDay(day, selectedDate)
+                                    const isClickable = status !== "before-start" && status !== "non-workday" &&
+                                        !(status === "holiday" && settings.excludeHolidays)
+
+                                    return (
+                                        <motion.button
+                                            key={day.toISOString()}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: index * 0.01, duration: 0.2 }}
+                                            whileHover={isClickable ? { scale: 1.1, zIndex: 10 } : undefined}
+                                            whileTap={isClickable ? { scale: 0.95 } : undefined}
+                                            onClick={() => isClickable && onSelectDate(day)}
+                                            disabled={!isClickable}
+                                            title={
+                                                status === "before-start" ? "Before start date" :
+                                                    status === "non-workday" ? "Non-workday" :
+                                                        status === "holiday" ? holiday?.name :
+                                                            undefined
+                                            }
+                                            className={cn(
+                                                "aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-all duration-200 relative",
+                                                // Base states
+                                                status === "before-start" && "text-muted-foreground/30 line-through cursor-not-allowed bg-muted/20",
+                                                status === "non-workday" && "text-muted-foreground/40 cursor-not-allowed bg-muted/10",
+                                                status === "holiday" && "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 cursor-not-allowed",
+                                                status === "logged" && "bg-green/20 text-green border-2 border-green font-bold",
+                                                status === "today" && "border-2 border-amber bg-amber/10 font-bold shadow-md",
+                                                status === "active" && "hover:bg-primary/10 hover:border-primary/50 border border-transparent",
+                                                // Selected state
+                                                isSelected && isClickable && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg",
+                                                // Current month styling
+                                                !isSameMonth(day, currentMonth) && "text-muted-foreground/50"
+                                            )}
+                                        >
+                                            <span>{format(day, "d")}</span>
+                                            {status === "holiday" && <span className="text-[10px] absolute -top-0.5 right-0.5">★</span>}
+                                            {status === "logged" && (
+                                                <motion.span
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    className="text-[10px] absolute bottom-0.5"
+                                                >
+                                                    ✓
+                                                </motion.span>
+                                            )}
+                                            {isToday(day) && (
+                                                <motion.div
+                                                    animate={{ scale: [1, 1.2, 1] }}
+                                                    transition={{ duration: 2, repeat: Infinity }}
+                                                    className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-amber rounded-full"
+                                                />
+                                            )}
+                                        </motion.button>
+                                    )
+                                })}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
 
-                    {/* Days grid */}
-                    <div className="grid grid-cols-7 gap-2">
-                        {days.map((day, i) => {
-                            const isCurrentMonth = isSameMonth(day, currentMonth)
-                            const isSelected = selectedDate && isSameDay(day, selectedDate)
-                            const status = getDayStatus(day)
-
-                            return (
-                                <motion.button
-                                    key={i}
-                                    type="button"
-                                    onClick={() => handleDateClick(day, status)}
-                                    disabled={status.isInactive}
-                                    whileHover={status.isInactive ? {} : { scale: 1.05 }}
-                                    whileTap={status.isInactive ? {} : { scale: 0.95 }}
-                                    title={status.holidayName || (status.isBeforeStart ? "Before start date" : status.isOff ? "Non-workday" : "")}
+                    {/* Compact Legends - Moved below days */}
+                    <div className="flex items-center justify-center gap-4 flex-wrap pt-2 border-t border-border/50">
+                        {legends.map((legend) => (
+                            <div key={legend.label} className="flex items-center gap-1.5 px-1 py-0.5 rounded-full hover:bg-secondary/50 transition-colors duration-200">
+                                <div
                                     className={cn(
-                                        "relative h-14 rounded-lg text-sm transition-all duration-200 border-2",
-                                        "focus:outline-none",
-                                        !isCurrentMonth && "opacity-30",
-
-                                        // Default state
-                                        "border-transparent bg-secondary/30",
-
-                                        // Inactive states (before start date, non-workday, or holiday)
-                                        status.isInactive && "opacity-40 cursor-not-allowed bg-muted/20 text-muted-foreground",
-
-                                        // Holiday styling
-                                        status.isHoliday && "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/30",
-
-                                        // Off day (non-workday) that's not a holiday
-                                        status.isOff && !status.isHoliday && "bg-muted/30",
-
-                                        // Before start date
-                                        status.isBeforeStart && "bg-muted/10 line-through",
-
-                                        // Active states (only if not inactive)
-                                        !status.isInactive && [
-                                            // Today
-                                            status.isToday && "border-amber bg-amber/10 text-amber-foreground font-bold",
-
-                                            // Scheduled
-                                            status.isScheduled && "border-primary bg-primary/10",
-
-                                            // Completed (logged)
-                                            status.isCompleted && "bg-green/20 border-green",
-
-                                            // Hover effect for active dates
-                                            "hover:border-primary/50 hover:shadow-md",
-                                        ],
-
-                                        // Selected
-                                        isSelected && !status.isInactive && "ring-2 ring-primary ring-offset-2"
+                                        "w-4 h-4 rounded-sm flex items-center justify-center text-[8px]",
+                                        legend.className
                                     )}
                                 >
-                                    <span className={cn(
-                                        "font-medium",
-                                        status.isToday && !status.isInactive && "text-amber"
-                                    )}>
-                                        {format(day, "d")}
-                                    </span>
-
-                                    {/* Status indicators */}
-                                    {status.log && !status.isInactive && (
-                                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-primary font-medium">
-                                            {status.log.hoursWorked}h
-                                        </span>
-                                    )}
-
-                                    {status.isHoliday && (
-                                        <span className="absolute top-0.5 right-0.5 text-red-500 text-[10px]">★</span>
-                                    )}
-
-                                    {status.isCompleted && !status.isInactive && (
-                                        <span className="absolute top-0.5 right-0.5 text-green text-[10px]">✓</span>
-                                    )}
-                                </motion.button>
-                            )
-                        })}
+                                    {legend.icon || <div className="w-1 h-1 rounded-full" />}
+                                </div>
+                                <span className="text-[10px] font-medium text-muted-foreground">{legend.label}</span>
+                            </div>
+                        ))}
                     </div>
                 </CardContent>
             </Card>

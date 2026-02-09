@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Save, Minus, Plus, ClipboardList, Trash2 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Save, Minus, Plus, ClipboardList, Trash2, Sparkles } from "lucide-react"
 import { format } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,11 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { DailyLog, LogStatus } from "@/types"
 
 interface DailyTaskLogProps {
@@ -31,6 +36,7 @@ export function DailyTaskLog({ selectedDate, existingLog, defaultHours, onSave, 
     const [tasks, setTasks] = useState("")
     const [showConfirm, setShowConfirm] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
 
     useEffect(() => {
         if (existingLog) {
@@ -47,14 +53,16 @@ export function DailyTaskLog({ selectedDate, existingLog, defaultHours, onSave, 
         setShowConfirm(true)
     }
 
-    const confirmSave = () => {
+    const confirmSave = async () => {
         if (!selectedDate) return
-        onSave({
+        setIsSaving(true)
+        await onSave({
             date: selectedDate.toISOString(),
             hoursWorked: hours,
             tasks,
             status: "completed",
         })
+        setIsSaving(false)
         setShowConfirm(false)
     }
 
@@ -71,91 +79,180 @@ export function DailyTaskLog({ selectedDate, existingLog, defaultHours, onSave, 
 
     if (!selectedDate) {
         return (
-            <Card className="mt-4">
-                <CardContent className="py-8 text-center text-muted-foreground">
-                    <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Select a date from the calendar to log your work</p>
-                </CardContent>
-            </Card>
+            <motion.div
+                whileHover={{ scale: 1.01 }}
+                transition={{ duration: 0.2 }}
+            >
+                <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                        <motion.div
+                            animate={{ y: [0, -5, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                            <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        </motion.div>
+                        <p>Select a date from the calendar to log your work</p>
+                    </CardContent>
+                </Card>
+            </motion.div>
         )
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-        >
-            <Card className="mt-4">
-                <CardContent className="pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                                {existingLog ? "Editing Log" : "New Log"}
-                            </p>
-                            <p className="text-lg font-semibold">
-                                {format(selectedDate, "EEEE, MMM do")}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 bg-secondary rounded-lg p-1">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setHours(Math.max(0, hours - 1))}
-                                className="h-8 w-8"
+        <AnimatePresence mode="wait">
+            <motion.div
+                key={selectedDate.toISOString()}
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                transition={{ duration: 0.3, type: "spring", stiffness: 100, damping: 15 }}
+                whileHover={{ scale: 1.01 }}
+            >
+                <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-border/50 overflow-hidden">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 }}
                             >
-                                <Minus className="h-4 w-4" />
-                            </Button>
-                            <div className="px-3 min-w-[60px] text-center">
-                                <span className="text-xs text-muted-foreground">HOURS</span>
-                                <p className="text-xl font-bold">{hours}h</p>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setHours(Math.min(24, hours + 1))}
-                                className="h-8 w-8"
+                                <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                    {existingLog ? (
+                                        <>
+                                            <Sparkles className="h-3 w-3 text-amber" />
+                                            Editing Log
+                                        </>
+                                    ) : (
+                                        "New Log"
+                                    )}
+                                </p>
+                                <p className="text-lg font-semibold">
+                                    {format(selectedDate, "EEEE, MMM do")}
+                                </p>
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.15 }}
+                                className="flex items-center gap-2 bg-secondary rounded-lg p-1"
                             >
-                                <Plus className="h-4 w-4" />
-                            </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setHours(Math.max(0, hours - 1))}
+                                                className="h-8 w-8"
+                                            >
+                                                <Minus className="h-4 w-4" />
+                                            </Button>
+                                        </motion.div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Decrease hours</TooltipContent>
+                                </Tooltip>
+                                <div className="px-3 min-w-[60px] text-center">
+                                    <span className="text-xs text-muted-foreground">HOURS</span>
+                                    <motion.p
+                                        key={hours}
+                                        initial={{ scale: 1.2, color: "hsl(var(--primary))" }}
+                                        animate={{ scale: 1, color: "inherit" }}
+                                        className="text-xl font-bold"
+                                    >
+                                        {hours}h
+                                    </motion.p>
+                                </div>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setHours(Math.min(24, hours + 1))}
+                                                className="h-8 w-8"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </motion.div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Increase hours</TooltipContent>
+                                </Tooltip>
+                            </motion.div>
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                            <ClipboardList className="h-4 w-4" />
-                            Daily Log
-                        </Label>
-                        <Textarea
-                            placeholder="What did you work on today? (optional)"
-                            value={tasks}
-                            onChange={(e) => setTasks(e.target.value)}
-                            className="min-h-[100px]"
-                        />
-                    </div>
-
-                    <div className="flex gap-2 mt-4">
-                        <Button
-                            onClick={handleSave}
-                            className="flex-1 gap-2"
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="space-y-2"
                         >
-                            <Save className="h-4 w-4" />
-                            {existingLog ? "Update" : "Save"}
-                        </Button>
+                            <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                <ClipboardList className="h-4 w-4" />
+                                Daily Log
+                            </Label>
+                            <Textarea
+                                placeholder="What did you work on today? (optional)"
+                                value={tasks}
+                                onChange={(e) => setTasks(e.target.value)}
+                                className="min-h-[100px] transition-all duration-200 focus:shadow-md"
+                            />
+                        </motion.div>
 
-                        {existingLog && (
-                            <Button
-                                onClick={handleDelete}
-                                variant="outline"
-                                className="gap-2 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.25 }}
+                            className="flex gap-2 mt-4"
+                        >
+                            <motion.div
+                                className="flex-1"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                             >
-                                <Trash2 className="h-4 w-4" />
-                                Unlog
-                            </Button>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+                                <Button
+                                    onClick={handleSave}
+                                    className="w-full gap-2"
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? (
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                            className="h-4 w-4 border-2 border-white border-t-transparent rounded-full"
+                                        />
+                                    ) : (
+                                        <Save className="h-4 w-4" />
+                                    )}
+                                    {existingLog ? "Update" : "Save"}
+                                </Button>
+                            </motion.div>
+
+                            {existingLog && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                        >
+                                            <Button
+                                                onClick={handleDelete}
+                                                variant="outline"
+                                                className="gap-2 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                Unlog
+                                            </Button>
+                                        </motion.div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Remove this log entry</TooltipContent>
+                                </Tooltip>
+                            )}
+                        </motion.div>
+                    </CardContent>
+                </Card>
+            </motion.div>
 
             {/* Save Confirmation Dialog */}
             <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
@@ -195,6 +292,6 @@ export function DailyTaskLog({ selectedDate, existingLog, defaultHours, onSave, 
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </motion.div>
+        </AnimatePresence>
     )
 }

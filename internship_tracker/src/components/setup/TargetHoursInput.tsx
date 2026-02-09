@@ -1,6 +1,7 @@
 import { Target } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 
 interface TargetHoursInputProps {
     value: number
@@ -49,7 +50,10 @@ export function TargetHoursInput({ value, onChange }: TargetHoursInputProps) {
                     value={value === 0 ? "" : value.toString()}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="pr-12 text-lg font-semibold focus:border-primary focus:ring-primary"
+                    className={cn(
+                        "pr-12 text-lg font-semibold focus:border-primary focus:ring-primary",
+                        value < 1 && "border-destructive focus:border-destructive focus:ring-destructive"
+                    )}
                     placeholder="Enter hours"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
-import { motion } from "framer-motion"
-import { Heart } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Sparkles } from "lucide-react"
 import { SetupSection } from "@/components/setup"
 import { ProgressSection } from "@/components/progress"
 import { CalendarSection } from "@/components/calendar"
@@ -8,7 +8,10 @@ import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { MembershipFooter } from "@/components/footer"
 import { settingsApi, logsApi, progressApi, reportsApi } from "@/lib/api"
 import { downloadCSV, downloadPDF } from "@/lib/reportGenerator"
+import { Toaster, toast } from "sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import type { InternSettings, DailyLog, InternProgress, Holiday, LogStatus } from "@/types"
+import paperPlane from "@/assets/Paper_plane.png"
 
 const defaultSettings: InternSettings = {
   targetHours: 500,
@@ -19,6 +22,31 @@ const defaultSettings: InternSettings = {
   autoProjection: true,
 }
 
+// Animation variants for staggered children
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.1,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 12,
+    },
+  },
+}
+
 function App() {
   const [settings, setSettings] = useState<InternSettings>(defaultSettings)
   const [logs, setLogs] = useState<DailyLog[]>([])
@@ -26,6 +54,16 @@ function App() {
   const [holidays, setHolidays] = useState<Holiday[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // Track scroll position for floating theme toggle
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 80)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   // Fetch initial data
   useEffect(() => {
@@ -35,7 +73,7 @@ function App() {
           settingsApi.get(),
           logsApi.getAll(),
           progressApi.get(),
-          reportsApi.getHolidays(2026),
+          reportsApi.getAllHolidays(),
         ])
         setSettings(settingsData)
         setLogs(logsData)
@@ -59,8 +97,10 @@ function App() {
       await settingsApi.update(newSettings)
       const progressData = await progressApi.get()
       setProgress(progressData)
+      toast.success("Settings updated successfully")
     } catch (error) {
       console.error("Failed to update settings:", error)
+      toast.error("Failed to update settings")
     }
   }, [settings])
 
@@ -71,8 +111,10 @@ function App() {
       setSettings(resetSettings)
       const progressData = await progressApi.get()
       setProgress(progressData)
+      toast.success("Settings reset to defaults")
     } catch (error) {
       console.error("Failed to reset settings:", error)
+      toast.error("Failed to reset settings")
     }
   }, [])
 
@@ -93,8 +135,10 @@ function App() {
       })
       const progressData = await progressApi.get()
       setProgress(progressData)
+      toast.success("Log saved successfully")
     } catch (error) {
       console.error("Failed to save log:", error)
+      toast.error("Failed to save log")
     }
   }, [])
 
@@ -109,8 +153,10 @@ function App() {
       setSelectedDate(null)
       const progressData = await progressApi.get()
       setProgress(progressData)
+      toast.success("Log deleted successfully")
     } catch (error) {
       console.error("Failed to delete log:", error)
+      toast.error("Failed to delete log")
     }
   }, [])
 
@@ -133,74 +179,214 @@ function App() {
     }
   }, [])
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+    <TooltipProvider>
+      <div className="relative min-h-screen font-inter overflow-x-hidden">
+        {/* Animated background elements & Base Background Color */}
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-background">
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3"
-          >
-            <Heart className="h-8 w-8 text-rose-500 fill-rose-500" />
-            <div>
-              <h1 className="text-2xl font-bold">Internship Tracker</h1>
-              <p className="text-sm text-muted-foreground">
-                Track your hours, exclude off-days, and hit your goal! 🎯
-              </p>
-            </div>
-          </motion.div>
-          <ThemeToggle />
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.03, 0.06, 0.03],
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-primary rounded-full blur-3xl"
+          />
+          <motion.div
+            animate={{
+              scale: [1.2, 1, 1.2],
+              opacity: [0.04, 0.08, 0.04],
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-green rounded-full blur-3xl"
+          />
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.02, 0.05, 0.02],
+            }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+            className="absolute top-1/3 left-1/3 w-1/3 h-1/3 bg-amber rounded-full blur-3xl"
+          />
+
+          {/* Paper plane background overlay - Repeating pattern */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: 'url("/Paper_plane.png")',
+              backgroundSize: '500px 500px',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'repeat',
+              filter: 'invert(1) opacity(0.06)',
+            }}
+          />
+          {/* Additional layer for dark mode - inverts back */}
+          <div
+            className="absolute inset-0 pointer-events-none hidden dark:block"
+            style={{
+              backgroundImage: 'url("/Paper_plane.png")',
+              backgroundSize: '500px 500px',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'repeat',
+              opacity: 0.04,
+            }}
+          />
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column - Setup & Progress */}
-          <div className="lg:col-span-4 space-y-6">
-            <SetupSection
-              settings={settings}
-              onSettingsChange={handleSettingsChange}
-              onReset={handleReset}
-            />
-            <ProgressSection
-              progress={progress}
-              onDownloadPDF={handleDownloadPDF}
-              onDownloadCSV={handleDownloadCSV}
-            />
+        {/* Floating Theme Toggle - Shows when scrolled */}
+        <AnimatePresence>
+          {isScrolled && (
+            <motion.div
+              initial={{ y: -60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -60, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 200, damping: 20 }}
+              className="fixed top-0 right-4 z-50"
+            >
+              <div className="bg-background/90 backdrop-blur-xl rounded-b-2xl px-4 py-2 shadow-lg border border-t-0 border-border/50">
+                <ThemeToggle />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Header - Centered Logo Design */}
+        <header className="sticky top-0 z-40 w-full bg-amber dark:bg-amber shadow-lg transition-all duration-300">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
+            {/* Left Side - Title */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 100, damping: 12 }}
+              className="flex items-center gap-2 flex-1"
+            >
+              <div>
+                <h1 className="text-lg font-bold text-white">
+                  Internship Tracker
+                </h1>
+                <p className="text-xs text-white/70">
+                  Track your hours & hit your goal! 🎯
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Center - Logo (pops out) */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 100, damping: 12, delay: 0.1 }}
+              className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10"
+            >
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative"
+              >
+                {/* Outer ring */}
+                <div className="w-60 h-28 rounded-[60px] bg-amber dark:bg-amber border-6 border-amber dark:border-amber flex items-center justify-center shadow-xl">
+                  {/* Inner circle with logo */}
+                  <div className="w-56 h-24 rounded-[56px] bg-white dark:bg-slate-100 flex items-center justify-center overflow-hidden shadow-inner">
+                    <img
+                      src="/src/assets/dw logo.png"
+                      alt="Digital Workforce"
+                      className="w-40 h-40 object-contain"
+                    />
+                  </div>
+                </div>
+                {/* Glow effect */}
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.1, 0.3] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="absolute inset-0 bg-white/20 rounded-full blur-md -z-10"
+                />
+              </motion.div>
+            </motion.div>
+
+            {/* Right Side - Theme Toggle */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: isScrolled ? 0 : 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 100, damping: 12 }}
+              className={`flex-1 flex justify-end ${isScrolled ? "pointer-events-none" : ""}`}
+            >
+              <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 hover:bg-white/20 transition-colors duration-200">
+                <ThemeToggle />
+              </div>
+            </motion.div>
           </div>
+        </header>
 
-          {/* Right Column - Calendar */}
-          <div className="lg:col-span-8">
-            <CalendarSection
-              logs={logs}
-              holidays={holidays}
-              settings={settings}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              onSaveLog={handleSaveLog}
-              onDeleteLog={handleDeleteLog}
-            />
-          </div>
-        </div>
-      </main>
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 relative z-10">
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="flex flex-col items-center justify-center py-32"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full mb-6"
+                />
+                <motion.div
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="flex items-center gap-2 text-muted-foreground"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>Loading your progress...</span>
+                </motion.div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="content"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+              >
+                {/* Left Column - Setup & Progress */}
+                <motion.div variants={itemVariants} className="lg:col-span-4 space-y-6">
+                  <SetupSection
+                    settings={settings}
+                    onSettingsChange={handleSettingsChange}
+                    onReset={handleReset}
+                    isLoading={isLoading}
+                  />
+                  <ProgressSection
+                    progress={progress}
+                    onDownloadPDF={handleDownloadPDF}
+                    onDownloadCSV={handleDownloadCSV}
+                    isLoading={isLoading}
+                  />
+                </motion.div>
 
-      {/* Footer */}
-      <MembershipFooter />
-    </div>
+                {/* Right Column - Calendar */}
+                <motion.div variants={itemVariants} className="lg:col-span-8">
+                  <CalendarSection
+                    logs={logs}
+                    holidays={holidays}
+                    settings={settings}
+                    selectedDate={selectedDate}
+                    onSelectDate={setSelectedDate}
+                    onSaveLog={handleSaveLog}
+                    onDeleteLog={handleDeleteLog}
+                  />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+
+        {/* Footer */}
+        <MembershipFooter />
+        <Toaster position="top-right" richColors />
+      </div>
+    </TooltipProvider>
   )
 }
 

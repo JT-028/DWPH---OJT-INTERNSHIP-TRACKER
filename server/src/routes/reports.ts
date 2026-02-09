@@ -49,6 +49,18 @@ router.get('/data', async (_req: Request, res: Response) => {
     }
 });
 
+// GET /api/reports/holidays/all - Get all available holidays
+router.get('/holidays/all', async (_req: Request, res: Response) => {
+    try {
+        const { getAllHolidays } = await import('../utils/holidays.js');
+        const holidays = getAllHolidays();
+        res.json(holidays);
+    } catch (error) {
+        console.error('Error fetching all holidays:', error);
+        res.status(500).json({ error: 'Failed to fetch all holidays' });
+    }
+});
+
 // GET /api/reports/holidays/:year - Get holidays for a specific year
 router.get('/holidays/:year', async (req: Request, res: Response) => {
     try {

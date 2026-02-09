@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { InternSettings, DailyLog, InternProgress, ReportData } from '@/types';
+import type { InternSettings, DailyLog, InternProgress, ReportData, Holiday } from '@/types';
 
 const api = axios.create({
     baseURL: '/api',
@@ -71,8 +71,13 @@ export const reportsApi = {
         return data;
     },
 
-    getHolidays: async (year: number): Promise<{ date: string; name: string; type: string }[]> => {
+    getHolidays: async (year: number): Promise<Holiday[]> => {
         const { data } = await api.get(`/reports/holidays/${year}`);
+        return data;
+    },
+
+    getAllHolidays: async (): Promise<Holiday[]> => {
+        const { data } = await api.get('/reports/holidays/all');
         return data;
     },
 };

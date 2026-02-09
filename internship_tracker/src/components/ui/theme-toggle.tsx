@@ -1,57 +1,48 @@
 import { Moon, Sun } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { useTheme } from "@/components/ui/theme-provider"
 
 export function ThemeToggle() {
-    const [theme, setTheme] = useState<"light" | "dark">("light")
-
-    useEffect(() => {
-        const stored = localStorage.getItem("theme") as "light" | "dark" | null
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-        const initial = stored || (prefersDark ? "dark" : "light")
-        setTheme(initial)
-        document.documentElement.classList.toggle("dark", initial === "dark")
-    }, [])
+    const { theme, setTheme } = useTheme()
 
     const toggleTheme = () => {
-        const newTheme = theme === "light" ? "dark" : "light"
-        setTheme(newTheme)
-        localStorage.setItem("theme", newTheme)
-        document.documentElement.classList.toggle("dark", newTheme === "dark")
+        setTheme(theme === "light" ? "dark" : "light")
     }
 
     return (
-        <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="relative overflow-hidden"
-        >
-            <AnimatePresence mode="wait" initial={false}>
-                {theme === "light" ? (
-                    <motion.div
-                        key="sun"
-                        initial={{ rotate: -90, opacity: 0 }}
-                        animate={{ rotate: 0, opacity: 1 }}
-                        exit={{ rotate: 90, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Sun className="h-5 w-5" />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="moon"
-                        initial={{ rotate: 90, opacity: 0 }}
-                        animate={{ rotate: 0, opacity: 1 }}
-                        exit={{ rotate: -90, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Moon className="h-5 w-5" />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            <span className="sr-only">Toggle theme</span>
-        </Button>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="relative overflow-hidden"
+            >
+                <AnimatePresence mode="wait" initial={false}>
+                    {theme === "light" ? (
+                        <motion.div
+                            key="sun"
+                            initial={{ y: -20, opacity: 0, rotate: -90 }}
+                            animate={{ y: 0, opacity: 1, rotate: 0 }}
+                            exit={{ y: 20, opacity: 0, rotate: 90 }}
+                            transition={{ duration: 0.3, type: "spring", stiffness: 200, damping: 15 }}
+                        >
+                            <Sun className="h-5 w-5" />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="moon"
+                            initial={{ y: -20, opacity: 0, rotate: -90 }}
+                            animate={{ y: 0, opacity: 1, rotate: 0 }}
+                            exit={{ y: 20, opacity: 0, rotate: 90 }}
+                            transition={{ duration: 0.3, type: "spring", stiffness: 200, damping: 15 }}
+                        >
+                            <Moon className="h-5 w-5" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                <span className="sr-only">Toggle theme</span>
+            </Button>
+        </motion.div>
     )
 }

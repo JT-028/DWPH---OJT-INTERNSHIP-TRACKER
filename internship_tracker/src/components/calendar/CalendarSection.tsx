@@ -1,7 +1,6 @@
 import { motion } from "framer-motion"
 import { InteractiveCalendar } from "./InteractiveCalendar"
 import { DailyTaskLog } from "./DailyTaskLog"
-import { CalendarLegend } from "./CalendarLegend"
 import type { DailyLog, Holiday, InternSettings, LogStatus } from "@/types"
 
 interface CalendarSectionProps {
@@ -30,30 +29,55 @@ export function CalendarSection({
         }) || null
         : null
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+            },
+        },
+    }
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 15 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: "spring",
+                stiffness: 100,
+                damping: 12,
+            },
+        },
+    }
+
     return (
         <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
             className="space-y-4"
         >
-            <InteractiveCalendar
-                logs={logs}
-                holidays={holidays}
-                settings={settings}
-                selectedDate={selectedDate}
-                onSelectDate={onSelectDate}
-            />
+            <motion.div variants={itemVariants}>
+                <InteractiveCalendar
+                    logs={logs}
+                    holidays={holidays}
+                    settings={settings}
+                    selectedDate={selectedDate}
+                    onSelectDate={onSelectDate}
+                />
+            </motion.div>
 
-            <DailyTaskLog
-                selectedDate={selectedDate}
-                existingLog={selectedLog}
-                defaultHours={settings.hoursPerDay}
-                onSave={onSaveLog}
-                onDelete={onDeleteLog}
-            />
-
-            <CalendarLegend />
+            <motion.div variants={itemVariants}>
+                <DailyTaskLog
+                    selectedDate={selectedDate}
+                    existingLog={selectedLog}
+                    defaultHours={settings.hoursPerDay}
+                    onSave={onSaveLog}
+                    onDelete={onDeleteLog}
+                />
+            </motion.div>
         </motion.div>
     )
 }

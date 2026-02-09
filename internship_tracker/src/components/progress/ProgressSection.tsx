@@ -3,6 +3,7 @@ import { Download, FileText, TrendingUp, Calendar, Clock, Trophy, Sparkles } fro
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -21,13 +22,29 @@ interface ProgressSectionProps {
     progress: InternProgress | null
     onDownloadPDF: () => void
     onDownloadCSV: () => void
+    isLoading?: boolean
 }
 
-export function ProgressSection({ progress, onDownloadPDF, onDownloadCSV }: ProgressSectionProps) {
-    if (!progress) {
+export function ProgressSection({ progress, onDownloadPDF, onDownloadCSV, isLoading }: ProgressSectionProps) {
+    if (isLoading || !progress) {
         return (
-            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl p-6 text-white">
-                <p className="text-center text-white/80">Loading progress...</p>
+            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl p-6 text-white space-y-4 animate-pulse">
+                <div className="flex justify-between items-center">
+                    <Skeleton className="h-6 w-32 bg-white/20" />
+                    <Skeleton className="h-5 w-16 bg-white/20 rounded-full" />
+                </div>
+                <div className="space-y-2">
+                    <div className="flex justify-between">
+                        <Skeleton className="h-4 w-40 bg-white/20" />
+                        <Skeleton className="h-4 w-10 bg-white/20" />
+                    </div>
+                    <Skeleton className="h-3 w-full bg-white/20" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                    <Skeleton className="h-24 w-full bg-white/20" />
+                    <Skeleton className="h-24 w-full bg-white/20" />
+                </div>
+                <Skeleton className="h-10 w-full bg-white/20" />
             </div>
         )
     }
