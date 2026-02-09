@@ -1,7 +1,0 @@
-{
-  "buildCommand": "cd internship_tracker && npm install && npm run build",
-  "outputDirectory": "internship_tracker/dist",
-  "installCommand": "cd internship_tracker && npm install",
-  "framework": null,
-  "devCommand": "cd internship_tracker && npm run dev"
-}
