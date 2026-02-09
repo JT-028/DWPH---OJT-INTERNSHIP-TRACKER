@@ -11,7 +11,6 @@ import { downloadCSV, downloadPDF } from "@/lib/reportGenerator"
 import { Toaster, toast } from "sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { InternSettings, DailyLog, InternProgress, Holiday, LogStatus } from "@/types"
-import paperPlane from "@/assets/Paper_plane.png"
 
 const defaultSettings: InternSettings = {
   targetHours: 500,
@@ -287,7 +286,7 @@ function App() {
                   {/* Inner circle with logo */}
                   <div className="w-56 h-24 rounded-[56px] bg-white dark:bg-slate-100 flex items-center justify-center overflow-hidden shadow-inner">
                     <img
-                      src="/src/assets/dw logo.png"
+                      src="/dw-logo.png"
                       alt="Digital Workforce"
                       className="w-40 h-40 object-contain"
                     />
