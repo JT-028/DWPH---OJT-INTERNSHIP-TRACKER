@@ -5,6 +5,7 @@ import { SetupSection } from "@/components/setup"
 import { ProgressSection } from "@/components/progress"
 import { CalendarSection } from "@/components/calendar"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { MembershipFooter } from "@/components/footer"
 import { settingsApi, logsApi, progressApi, reportsApi } from "@/lib/api"
 import { downloadCSV, downloadPDF } from "@/lib/reportGenerator"
 import type { InternSettings, DailyLog, InternProgress, Holiday, LogStatus } from "@/types"
@@ -198,9 +199,7 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-sm text-muted-foreground">
-        Data stays on your device. Projections update instantly as you change your schedule.
-      </footer>
+      <MembershipFooter />
     </div>
   )
 }
