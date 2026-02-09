@@ -11,6 +11,7 @@ interface CalendarSectionProps {
     selectedDate: Date | null
     onSelectDate: (date: Date) => void
     onSaveLog: (log: { date: string; hoursWorked: number; tasks: string; status: LogStatus }) => void
+    onDeleteLog: (date: string) => void
 }
 
 export function CalendarSection({
@@ -20,6 +21,7 @@ export function CalendarSection({
     selectedDate,
     onSelectDate,
     onSaveLog,
+    onDeleteLog,
 }: CalendarSectionProps) {
     const selectedLog = selectedDate
         ? logs.find((log) => {
@@ -48,6 +50,7 @@ export function CalendarSection({
                 existingLog={selectedLog}
                 defaultHours={settings.hoursPerDay}
                 onSave={onSaveLog}
+                onDelete={onDeleteLog}
             />
 
             <CalendarLegend />

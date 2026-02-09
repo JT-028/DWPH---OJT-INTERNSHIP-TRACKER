@@ -97,6 +97,22 @@ function App() {
     }
   }, [])
 
+  // Delete daily log (unlog)
+  const handleDeleteLog = useCallback(async (date: string) => {
+    try {
+      const dateStr = new Date(date).toISOString().split('T')[0]
+      await logsApi.delete(dateStr)
+      setLogs((prev) => prev.filter(
+        (l) => new Date(l.date).toDateString() !== new Date(date).toDateString()
+      ))
+      setSelectedDate(null)
+      const progressData = await progressApi.get()
+      setProgress(progressData)
+    } catch (error) {
+      console.error("Failed to delete log:", error)
+    }
+  }, [])
+
   // Download reports
   const handleDownloadPDF = useCallback(async () => {
     try {
@@ -175,6 +191,7 @@ function App() {
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}
               onSaveLog={handleSaveLog}
+              onDeleteLog={handleDeleteLog}
             />
           </div>
         </div>
