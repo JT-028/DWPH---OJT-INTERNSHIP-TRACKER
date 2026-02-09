@@ -1,66 +1,91 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(240 10% 3.9%);
+  /* Primary palette from reference */
+  --color-amber: hsl(38 98% 49%);
+  /* #fba201 */
+  --color-yellow: hsl(45 94% 53%);
+  /* #f7c819 */
+  --color-royal-blue: hsl(224 72% 57%);
+  /* #4169e1 */
+  --color-green: hsl(96 41% 46%);
+  /* #6fa842 */
+
+  /* Light mode theme */
+  --color-background: hsl(40 30% 98%);
+  --color-foreground: hsl(220 15% 15%);
   --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(240 10% 3.9%);
+  --color-card-foreground: hsl(220 15% 15%);
   --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(240 10% 3.9%);
-  --color-primary: hsl(262 83% 58%);
+  --color-popover-foreground: hsl(220 15% 15%);
+  --color-primary: hsl(224 72% 57%);
+  /* Royal Blue */
   --color-primary-foreground: hsl(0 0% 100%);
-  --color-secondary: hsl(240 4.8% 95.9%);
-  --color-secondary-foreground: hsl(240 5.9% 10%);
-  --color-muted: hsl(240 4.8% 95.9%);
-  --color-muted-foreground: hsl(240 3.8% 46.1%);
-  --color-accent: hsl(262 83% 58%);
+  --color-secondary: hsl(40 30% 95%);
+  --color-secondary-foreground: hsl(220 15% 20%);
+  --color-muted: hsl(40 20% 92%);
+  --color-muted-foreground: hsl(220 10% 45%);
+  --color-accent: hsl(38 98% 49%);
+  /* Amber */
   --color-accent-foreground: hsl(0 0% 100%);
-  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive: hsl(0 72% 51%);
   --color-destructive-foreground: hsl(0 0% 98%);
-  --color-border: hsl(240 5.9% 90%);
-  --color-input: hsl(240 5.9% 90%);
-  --color-ring: hsl(262 83% 58%);
+  --color-border: hsl(220 13% 87%);
+  --color-input: hsl(220 13% 87%);
+  --color-ring: hsl(224 72% 57%);
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
 
-  /* Calendar status colors */
-  --color-scheduled: hsl(262 83% 58%);
-  --color-completed: hsl(142 76% 36%);
-  --color-holiday: hsl(0 84% 60%);
-  --color-today: hsl(340 82% 52%);
-  --color-off: hsl(240 3.8% 70%);
+  /* Calendar status colors with new palette */
+  --color-scheduled: hsl(224 72% 57%);
+  /* Royal Blue */
+  --color-completed: hsl(96 41% 46%);
+  /* Green */
+  --color-holiday: hsl(0 72% 51%);
+  /* Red */
+  --color-today: hsl(38 98% 49%);
+  /* Amber */
+  --color-off: hsl(220 10% 75%);
+  --color-inactive: hsl(220 10% 85%);
 }
 
 /* Dark mode overrides */
 .dark {
-  --color-background: hsl(240 10% 3.9%);
-  --color-foreground: hsl(0 0% 98%);
-  --color-card: hsl(240 10% 3.9%);
-  --color-card-foreground: hsl(0 0% 98%);
-  --color-popover: hsl(240 10% 3.9%);
-  --color-popover-foreground: hsl(0 0% 98%);
-  --color-primary: hsl(262 83% 68%);
+  --color-background: hsl(220 20% 10%);
+  --color-foreground: hsl(40 30% 95%);
+  --color-card: hsl(220 20% 13%);
+  --color-card-foreground: hsl(40 30% 95%);
+  --color-popover: hsl(220 20% 13%);
+  --color-popover-foreground: hsl(40 30% 95%);
+  --color-primary: hsl(224 72% 65%);
+  /* Royal Blue lighter */
   --color-primary-foreground: hsl(0 0% 100%);
-  --color-secondary: hsl(240 3.7% 15.9%);
-  --color-secondary-foreground: hsl(0 0% 98%);
-  --color-muted: hsl(240 3.7% 15.9%);
-  --color-muted-foreground: hsl(240 5% 64.9%);
-  --color-accent: hsl(262 83% 68%);
-  --color-accent-foreground: hsl(0 0% 100%);
-  --color-destructive: hsl(0 62.8% 30.6%);
+  --color-secondary: hsl(220 15% 18%);
+  --color-secondary-foreground: hsl(40 30% 90%);
+  --color-muted: hsl(220 15% 20%);
+  --color-muted-foreground: hsl(220 10% 60%);
+  --color-accent: hsl(38 98% 55%);
+  /* Amber lighter */
+  --color-accent-foreground: hsl(220 20% 10%);
+  --color-destructive: hsl(0 62% 40%);
   --color-destructive-foreground: hsl(0 0% 98%);
-  --color-border: hsl(240 3.7% 15.9%);
-  --color-input: hsl(240 3.7% 15.9%);
-  --color-ring: hsl(262 83% 68%);
+  --color-border: hsl(220 15% 22%);
+  --color-input: hsl(220 15% 22%);
+  --color-ring: hsl(224 72% 65%);
 
-  --color-scheduled: hsl(262 83% 68%);
-  --color-completed: hsl(142 76% 46%);
-  --color-holiday: hsl(0 84% 65%);
-  --color-today: hsl(340 82% 62%);
-  --color-off: hsl(240 3.8% 46%);
+  --color-scheduled: hsl(224 72% 65%);
+  /* Royal Blue */
+  --color-completed: hsl(96 41% 55%);
+  /* Green lighter */
+  --color-holiday: hsl(0 72% 55%);
+  /* Red lighter */
+  --color-today: hsl(38 98% 55%);
+  /* Amber lighter */
+  --color-off: hsl(220 10% 40%);
+  --color-inactive: hsl(220 10% 25%);
 }
 
 * {
@@ -95,6 +120,19 @@ body {
   opacity: 0.5;
 }
 
+/* Gradient backgrounds */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--color-royal-blue) 0%, hsl(224 72% 45%) 100%);
+}
+
+.bg-gradient-accent {
+  background: linear-gradient(135deg, var(--color-amber) 0%, var(--color-yellow) 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, var(--color-green) 0%, hsl(96 41% 55%) 100%);
+}
+
 /* Animation utilities */
 @keyframes fadeIn {
   from {
@@ -118,10 +156,26 @@ body {
   }
 }
 
+@keyframes pulse-soft {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
 .animate-slide-up {
   animation: slideUp 0.4s ease-out forwards;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
 }

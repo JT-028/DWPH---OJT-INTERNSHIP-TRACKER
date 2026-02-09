@@ -66,6 +66,11 @@ export const isHoliday = (dateStr: string): Holiday | undefined => {
     return allHolidays.find((h) => h.date === dateStr);
 };
 
+export const getHolidayName = (dateStr: string): string | undefined => {
+    const holiday = isHoliday(dateStr);
+    return holiday?.name;
+};
+
 export const getHolidaysBetweenDates = (startDate: Date, endDate: Date): Holiday[] => {
     const allHolidays = getAllHolidays();
     return allHolidays.filter((h) => {

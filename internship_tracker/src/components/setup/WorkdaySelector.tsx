@@ -12,7 +12,10 @@ export function WorkdaySelector({ value, onChange }: WorkdaySelectorProps) {
 
     const toggleDay = (day: number) => {
         if (value.includes(day)) {
-            onChange(value.filter((d) => d !== day))
+            // Don't allow removing all days
+            if (value.length > 1) {
+                onChange(value.filter((d) => d !== day))
+            }
         } else {
             onChange([...value, day].sort())
         }
@@ -34,12 +37,12 @@ export function WorkdaySelector({ value, onChange }: WorkdaySelectorProps) {
                             onClick={() => toggleDay(day)}
                             className={cn(
                                 "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200",
-                                "border-2 hover:scale-110",
+                                "border-2 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary/50",
                                 isSelected
                                     ? "bg-primary border-primary text-primary-foreground shadow-lg"
                                     : isWeekend
-                                        ? "border-muted text-muted-foreground hover:border-primary/50"
-                                        : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50"
+                                        ? "border-muted text-muted-foreground hover:border-amber/50 hover:bg-amber/5"
+                                        : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
                             )}
                         >
                             {getDayName(day)}
@@ -47,9 +50,8 @@ export function WorkdaySelector({ value, onChange }: WorkdaySelectorProps) {
                     )
                 })}
             </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <span className="text-yellow-500">🗓️</span>
-                Uncheck days you won't attend
+            <p className="text-xs text-muted-foreground">
+                Click to toggle days. These days will be active in the calendar.
             </p>
         </div>
     )

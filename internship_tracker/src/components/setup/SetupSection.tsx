@@ -1,13 +1,7 @@
 import { motion } from "framer-motion"
-import { Settings, RotateCcw } from "lucide-react"
+import { RotateCcw, Settings as SettingsIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { TargetHoursInput } from "./TargetHoursInput"
-import { StartDatePicker } from "./StartDatePicker"
-import { HoursPerDaySlider } from "./HoursPerDaySlider"
-import { HolidayExclusion } from "./HolidayExclusion"
-import { WorkdaySelector } from "./WorkdaySelector"
-import { ProjectionToggle } from "./ProjectionToggle"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -19,6 +13,12 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { TargetHoursInput } from "./TargetHoursInput"
+import { StartDatePicker } from "./StartDatePicker"
+import { HoursPerDaySlider } from "./HoursPerDaySlider"
+import { HolidayExclusion } from "./HolidayExclusion"
+import { WorkdaySelector } from "./WorkdaySelector"
+import { ProjectionToggle } from "./ProjectionToggle"
 import type { InternSettings } from "@/types"
 
 interface SetupSectionProps {
@@ -30,66 +30,71 @@ interface SetupSectionProps {
 export function SetupSection({ settings, onSettingsChange, onReset }: SetupSectionProps) {
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
         >
-            <Card className="h-full">
-                <CardHeader className="flex flex-row items-center justify-between pb-4">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                        <Settings className="h-5 w-5 text-primary" />
-                        Setup
-                    </CardTitle>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                                <RotateCcw className="h-4 w-4 mr-1" />
-                                Reset
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Reset all settings?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will reset all your settings to default values. Your logged hours will NOT be deleted.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={onReset}>Reset</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+            <Card className="overflow-hidden">
+                <CardHeader className="pb-4 bg-gradient-to-r from-amber/10 to-yellow/10">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl font-bold flex items-center gap-2">
+                            <SettingsIcon className="h-5 w-5 text-amber" />
+                            Setup
+                        </CardTitle>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
+                                    <RotateCcw className="h-4 w-4 mr-1" />
+                                    Reset
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Reset all settings?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will reset all your preferences to their default values.
+                                        Your logged hours will NOT be deleted.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={onReset} className="bg-destructive text-destructive-foreground">
+                                        Reset Settings
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 pt-6">
                     <TargetHoursInput
                         value={settings.targetHours}
-                        onChange={(value) => onSettingsChange({ targetHours: value })}
+                        onChange={(targetHours) => onSettingsChange({ targetHours })}
                     />
 
                     <StartDatePicker
-                        value={settings.startDate}
-                        onChange={(value) => onSettingsChange({ startDate: value })}
+                        value={settings.startDate ? new Date(settings.startDate) : new Date()}
+                        onChange={(startDate) => onSettingsChange({ startDate: startDate.toISOString() })}
                     />
 
                     <HoursPerDaySlider
                         value={settings.hoursPerDay}
-                        onChange={(value) => onSettingsChange({ hoursPerDay: value })}
+                        onChange={(hoursPerDay) => onSettingsChange({ hoursPerDay })}
                     />
 
                     <HolidayExclusion
                         value={settings.excludeHolidays}
-                        onChange={(value) => onSettingsChange({ excludeHolidays: value })}
+                        onChange={(excludeHolidays) => onSettingsChange({ excludeHolidays })}
                     />
 
                     <WorkdaySelector
                         value={settings.workDays}
-                        onChange={(value) => onSettingsChange({ workDays: value })}
+                        onChange={(workDays) => onSettingsChange({ workDays })}
                     />
 
                     <ProjectionToggle
                         value={settings.autoProjection}
-                        onChange={(value) => onSettingsChange({ autoProjection: value })}
+                        onChange={(autoProjection) => onSettingsChange({ autoProjection })}
                     />
                 </CardContent>
             </Card>
