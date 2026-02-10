@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles } from "lucide-react"
+import { Shield, LogOut, Sparkles } from "lucide-react"
 import { SetupSection } from "@/components/setup"
 import { ProgressSection } from "@/components/progress"
 import { CalendarSection } from "@/components/calendar"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { MembershipFooter } from "@/components/footer"
+import { Button } from "@/components/ui/button"
 import { settingsApi, logsApi, progressApi, reportsApi } from "@/lib/api"
 import { downloadCSV, downloadPDF } from "@/lib/reportGenerator"
 import { Toaster, toast } from "sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { useAuth } from "@/context/AuthContext"
 import type { InternSettings, DailyLog, InternProgress, Holiday, LogStatus } from "@/types"
 
 const defaultSettings: InternSettings = {
@@ -47,6 +50,8 @@ const itemVariants = {
 }
 
 function App() {
+  const { logout, isAdminOrSubAdmin } = useAuth()
+  const navigate = useNavigate()
   const [settings, setSettings] = useState<InternSettings>(defaultSettings)
   const [logs, setLogs] = useState<DailyLog[]>([])
   const [progress, setProgress] = useState<InternProgress | null>(null)
@@ -122,8 +127,10 @@ function App() {
     try {
       const savedLog = await logsApi.save(log)
       setLogs((prev) => {
+        // Compare using date string (YYYY-MM-DD)
+        const savedDateStr = savedLog.date.split('T')[0]
         const existing = prev.findIndex(
-          (l) => new Date(l.date).toDateString() === new Date(savedLog.date).toDateString()
+          (l) => l.date.split('T')[0] === savedDateStr
         )
         if (existing >= 0) {
           const updated = [...prev]
@@ -144,10 +151,10 @@ function App() {
   // Delete daily log (unlog)
   const handleDeleteLog = useCallback(async (date: string) => {
     try {
-      const dateStr = new Date(date).toISOString().split('T')[0]
-      await logsApi.delete(dateStr)
+      // date is already in YYYY-MM-DD format from DailyTaskLog
+      await logsApi.delete(date)
       setLogs((prev) => prev.filter(
-        (l) => new Date(l.date).toDateString() !== new Date(date).toDateString()
+        (l) => l.date.split('T')[0] !== date
       ))
       setSelectedDate(null)
       const progressData = await progressApi.get()
@@ -301,16 +308,36 @@ function App() {
               </motion.div>
             </motion.div>
 
-            {/* Right Side - Theme Toggle */}
+            {/* Right Side - Auth Controls & Theme Toggle */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: isScrolled ? 0 : 1, x: 0 }}
               transition={{ type: "spring", stiffness: 100, damping: 12 }}
-              className={`flex-1 flex justify-end ${isScrolled ? "pointer-events-none" : ""}`}
+              className={`flex-1 flex items-center justify-end gap-2 ${isScrolled ? "pointer-events-none" : ""}`}
             >
+              {isAdminOrSubAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/admin')}
+                  className="text-white/80 hover:text-white hover:bg-white/10 text-xs gap-1.5 h-8"
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Button>
+              )}
               <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 hover:bg-white/20 transition-colors duration-200">
                 <ThemeToggle />
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { logout(); navigate('/login'); }}
+                className="text-white/80 hover:text-white hover:bg-white/10 text-xs gap-1.5 h-8"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </motion.div>
           </div>
         </header>

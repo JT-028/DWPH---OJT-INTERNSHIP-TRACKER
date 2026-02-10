@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export type LogStatus = 'scheduled' | 'completed' | 'holiday' | 'off';
 
 export interface IDailyLog extends Document {
+    userId: mongoose.Types.ObjectId;
     date: Date;
     hoursWorked: number;
     tasks: string;
@@ -13,10 +14,15 @@ export interface IDailyLog extends Document {
 
 const DailyLogSchema = new Schema<IDailyLog>(
     {
+        userId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+            index: true,
+        },
         date: {
             type: Date,
             required: true,
-            unique: true,
         },
         hoursWorked: {
             type: Number,
@@ -40,7 +46,7 @@ const DailyLogSchema = new Schema<IDailyLog>(
     }
 );
 
-// Index for efficient date queries
-DailyLogSchema.index({ date: 1 });
+// Compound unique index: one log per user per date
+DailyLogSchema.index({ userId: 1, date: 1 }, { unique: true });
 
 export default mongoose.model<IDailyLog>('DailyLog', DailyLogSchema);

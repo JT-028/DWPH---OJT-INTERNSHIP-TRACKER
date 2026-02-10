@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISettings extends Document {
+    userId: mongoose.Types.ObjectId;
     targetHours: number;
     startDate: Date;
     hoursPerDay: number;
@@ -13,6 +14,12 @@ export interface ISettings extends Document {
 
 const SettingsSchema = new Schema<ISettings>(
     {
+        userId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+            index: true,
+        },
         targetHours: {
             type: Number,
             required: true,
@@ -52,5 +59,8 @@ const SettingsSchema = new Schema<ISettings>(
         timestamps: true,
     }
 );
+
+// One settings document per user
+SettingsSchema.index({ userId: 1 }, { unique: true });
 
 export default mongoose.model<ISettings>('Settings', SettingsSchema);

@@ -1,9 +1,13 @@
 import { Router, Request, Response } from 'express';
 import DailyLog from '../models/DailyLog.js';
 import Settings from '../models/Settings.js';
-import { isHoliday, getHolidayName } from '../utils/holidays.js';
+import { isHoliday } from '../utils/holidays.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
+
+// All progress routes require authentication
+router.use(authenticate);
 
 // Helper function to format date as YYYY-MM-DD
 const formatDate = (date: Date): string => {
@@ -94,11 +98,12 @@ const isValidWorkingDay = (date: Date, workDays: number[], excludeHolidays: bool
     return true;
 };
 
-// GET /api/progress - Get computed progress with enhanced projection
-router.get('/', async (_req: Request, res: Response) => {
+// GET /api/progress - Get computed progress for current user
+router.get('/', async (req: Request, res: Response) => {
     try {
-        const settings = await Settings.findOne();
-        const logs = await DailyLog.find({ status: 'completed' });
+        const userId = req.user!._id;
+        const settings = await Settings.findOne({ userId });
+        const logs = await DailyLog.find({ userId, status: 'completed' });
 
         if (!settings) {
             return res.status(404).json({ error: 'Settings not found' });
@@ -109,20 +114,12 @@ router.get('/', async (_req: Request, res: Response) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Calculate total hours completed
         const totalHoursCompleted = logs.reduce((sum, log) => sum + log.hoursWorked, 0);
         const totalDaysCompleted = logs.length;
-
-        // Calculate remaining hours
         const remainingHours = Math.max(0, settings.targetHours - totalHoursCompleted);
-
-        // Calculate remaining working days needed (based on hours per day setting)
         const remainingDays = Math.ceil(remainingHours / settings.hoursPerDay);
-
-        // Calculate progress percentage
         const progressPercentage = Math.min(100, (totalHoursCompleted / settings.targetHours) * 100);
 
-        // Enhanced auto-projection calculation
         let projectedEndDate: Date | null = null;
         let projectionDetails = {
             workingDaysFromStart: 0,
@@ -137,54 +134,23 @@ router.get('/', async (_req: Request, res: Response) => {
         };
 
         if (settings.autoProjection) {
-            // With auto-projection ON, calculate based on actual performance
             if (totalDaysCompleted > 0) {
-                // Use actual average hours per day for more accurate projection
                 const avgHoursPerDay = totalHoursCompleted / totalDaysCompleted;
                 const projectedRemainingDays = Math.ceil(remainingHours / avgHoursPerDay);
-
                 projectionDetails.projectionBasis = 'average';
                 projectionDetails.workingDaysRemaining = projectedRemainingDays;
-
-                // Project from today
-                projectedEndDate = findProjectedEndDate(
-                    today,
-                    projectedRemainingDays,
-                    settings.workDays,
-                    settings.excludeHolidays
-                );
+                projectedEndDate = findProjectedEndDate(today, projectedRemainingDays, settings.workDays, settings.excludeHolidays);
             } else {
-                // No logs yet, use settings-based projection from start date
-                projectedEndDate = findProjectedEndDate(
-                    startDate,
-                    remainingDays,
-                    settings.workDays,
-                    settings.excludeHolidays
-                );
+                projectedEndDate = findProjectedEndDate(startDate, remainingDays, settings.workDays, settings.excludeHolidays);
             }
         } else {
-            // Manual projection: use hoursPerDay setting strictly
-            projectedEndDate = findProjectedEndDate(
-                today,
-                remainingDays,
-                settings.workDays,
-                settings.excludeHolidays
-            );
+            projectedEndDate = findProjectedEndDate(today, remainingDays, settings.workDays, settings.excludeHolidays);
         }
 
-        // Calculate how many working days have passed since start
         if (startDate <= today) {
-            projectionDetails.workingDaysFromStart = countWorkingDays(
-                startDate,
-                today,
-                settings.workDays,
-                settings.excludeHolidays
-            );
-
-            // Compare expected vs actual progress
+            projectionDetails.workingDaysFromStart = countWorkingDays(startDate, today, settings.workDays, settings.excludeHolidays);
             const expectedDaysLogged = projectionDetails.workingDaysFromStart;
             const diff = totalDaysCompleted - expectedDaysLogged;
-
             if (diff > 0) {
                 projectionDetails.daysAhead = diff;
             } else if (diff < 0) {

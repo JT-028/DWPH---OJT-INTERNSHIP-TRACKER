@@ -56,8 +56,9 @@ export function DailyTaskLog({ selectedDate, existingLog, defaultHours, onSave, 
     const confirmSave = async () => {
         if (!selectedDate) return
         setIsSaving(true)
+        // Use date-only format to avoid timezone issues
         await onSave({
-            date: selectedDate.toISOString(),
+            date: format(selectedDate, "yyyy-MM-dd"),
             hoursWorked: hours,
             tasks,
             status: "completed",
@@ -73,7 +74,8 @@ export function DailyTaskLog({ selectedDate, existingLog, defaultHours, onSave, 
 
     const confirmDelete = () => {
         if (!selectedDate) return
-        onDelete(selectedDate.toISOString())
+        // Use date-only format to avoid timezone issues
+        onDelete(format(selectedDate, "yyyy-MM-dd"))
         setShowDeleteConfirm(false)
     }
 

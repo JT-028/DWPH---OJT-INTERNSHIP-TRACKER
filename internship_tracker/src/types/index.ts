@@ -1,7 +1,38 @@
 export type LogStatus = 'scheduled' | 'completed' | 'holiday' | 'off';
+export type UserRole = 'intern' | 'sub-admin' | 'admin';
+
+export interface User {
+    _id: string;
+    email: string;
+    name: string;
+    role: UserRole;
+    isActive: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+    // Populated by admin endpoints
+    totalHoursCompleted?: number;
+    targetHours?: number;
+}
+
+export interface AuthResponse {
+    user: User;
+    token: string;
+}
+
+export interface LoginCredentials {
+    email: string;
+    password: string;
+}
+
+export interface RegisterData {
+    name: string;
+    email: string;
+    password: string;
+}
 
 export interface InternSettings {
     _id?: string;
+    userId?: string;
     targetHours: number;
     startDate: string;
     hoursPerDay: number;
@@ -14,6 +45,7 @@ export interface InternSettings {
 
 export interface DailyLog {
     _id?: string;
+    userId?: string;
     date: string;
     hoursWorked: number;
     tasks: string;
@@ -57,4 +89,16 @@ export interface CalendarDay {
     isHoliday: boolean;
     holidayName?: string;
     log?: DailyLog;
+}
+
+export interface UserProgress {
+    user: User;
+    progress: {
+        totalHoursCompleted: number;
+        totalDaysCompleted: number;
+        remainingHours: number;
+        progressPercentage: number;
+        targetHours: number;
+    };
+    logs: DailyLog[];
 }

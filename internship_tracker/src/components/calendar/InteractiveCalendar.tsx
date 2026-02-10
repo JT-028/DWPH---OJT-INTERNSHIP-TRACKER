@@ -57,7 +57,9 @@ export function InteractiveCalendar({
     }
 
     const isLogged = (date: Date) => {
-        return logs.some((log) => isSameDay(new Date(log.date), date))
+        // Use date string comparison to avoid timezone issues
+        const dateStr = format(date, "yyyy-MM-dd")
+        return logs.some((log) => log.date.split('T')[0] === dateStr)
     }
 
     const isHoliday = (date: Date) => {
@@ -76,12 +78,14 @@ export function InteractiveCalendar({
     }
 
     const getDayStatus = (date: Date) => {
+        // Check logged FIRST - logged days should always show as logged
+        if (isLogged(date)) return "logged"
+        
         if (isBeforeStartDate(date)) return "before-start"
         if (!isWorkday(date)) return "non-workday"
 
         const holiday = isHoliday(date)
         if (holiday && settings.excludeHolidays) return "holiday"
-        if (isLogged(date)) return "logged"
         if (isToday(date)) return "today"
 
         return "active"
@@ -200,8 +204,10 @@ export function InteractiveCalendar({
                                     const status = getDayStatus(day)
                                     const holiday = isHoliday(day)
                                     const isSelected = selectedDate && isSameDay(day, selectedDate)
-                                    const isClickable = status !== "before-start" && status !== "non-workday" &&
-                                        !(status === "holiday" && settings.excludeHolidays)
+                                    // Logged days are always clickable
+                                    const isClickable = status === "logged" || 
+                                        (status !== "before-start" && status !== "non-workday" &&
+                                        !(status === "holiday" && settings.excludeHolidays))
 
                                     return (
                                         <motion.button

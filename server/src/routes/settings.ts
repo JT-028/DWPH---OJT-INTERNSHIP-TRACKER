@@ -1,16 +1,22 @@
 import { Router, Request, Response } from 'express';
 import Settings from '../models/Settings.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
-// GET /api/settings - Get current settings (creates default if none exists)
-router.get('/', async (_req: Request, res: Response) => {
+// All settings routes require authentication
+router.use(authenticate);
+
+// GET /api/settings - Get current user's settings (creates default if none exists)
+router.get('/', async (req: Request, res: Response) => {
     try {
-        let settings = await Settings.findOne();
+        const userId = req.user!._id;
+        let settings = await Settings.findOne({ userId });
 
         if (!settings) {
-            // Create default settings if none exists
+            // Create default settings for this user
             settings = await Settings.create({
+                userId,
                 targetHours: 500,
                 startDate: new Date(),
                 hoursPerDay: 8,
@@ -27,9 +33,10 @@ router.get('/', async (_req: Request, res: Response) => {
     }
 });
 
-// PUT /api/settings - Update settings
+// PUT /api/settings - Update current user's settings
 router.put('/', async (req: Request, res: Response) => {
     try {
+        const userId = req.user!._id;
         const {
             targetHours,
             startDate,
@@ -39,10 +46,11 @@ router.put('/', async (req: Request, res: Response) => {
             autoProjection,
         } = req.body;
 
-        let settings = await Settings.findOne();
+        let settings = await Settings.findOne({ userId });
 
         if (!settings) {
             settings = await Settings.create({
+                userId,
                 targetHours,
                 startDate,
                 hoursPerDay,
@@ -67,11 +75,13 @@ router.put('/', async (req: Request, res: Response) => {
     }
 });
 
-// DELETE /api/settings - Reset to defaults
-router.delete('/', async (_req: Request, res: Response) => {
+// DELETE /api/settings - Reset current user's settings to defaults
+router.delete('/', async (req: Request, res: Response) => {
     try {
-        await Settings.deleteMany({});
+        const userId = req.user!._id;
+        await Settings.deleteMany({ userId });
         const settings = await Settings.create({
+            userId,
             targetHours: 500,
             startDate: new Date(),
             hoursPerDay: 8,

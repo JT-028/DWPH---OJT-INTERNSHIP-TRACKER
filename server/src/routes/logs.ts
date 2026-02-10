@@ -1,12 +1,17 @@
 import { Router, Request, Response } from 'express';
 import DailyLog from '../models/DailyLog.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
-// GET /api/logs - Get all daily logs
-router.get('/', async (_req: Request, res: Response) => {
+// All logs routes require authentication
+router.use(authenticate);
+
+// GET /api/logs - Get all daily logs for current user
+router.get('/', async (req: Request, res: Response) => {
     try {
-        const logs = await DailyLog.find().sort({ date: 1 });
+        const userId = req.user!._id;
+        const logs = await DailyLog.find({ userId }).sort({ date: 1 });
         res.json(logs);
     } catch (error) {
         console.error('Error fetching logs:', error);
@@ -14,18 +19,15 @@ router.get('/', async (_req: Request, res: Response) => {
     }
 });
 
-// GET /api/logs/:date - Get log for specific date
+// GET /api/logs/:date - Get log for specific date for current user
 router.get('/:date', async (req: Request, res: Response) => {
     try {
+        const userId = req.user!._id;
         const { date } = req.params;
-        const startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
+        const dateStr = date.includes('T') ? date.split('T')[0] : date;
+        const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
 
-        const log = await DailyLog.findOne({
-            date: { $gte: startOfDay, $lte: endOfDay },
-        });
+        const log = await DailyLog.findOne({ userId, date: targetDate });
 
         if (!log) {
             return res.status(404).json({ error: 'Log not found' });
@@ -38,27 +40,25 @@ router.get('/:date', async (req: Request, res: Response) => {
     }
 });
 
-// POST /api/logs - Create or update a daily log
+// POST /api/logs - Create or update a daily log for current user
 router.post('/', async (req: Request, res: Response) => {
     try {
+        const userId = req.user!._id;
         const { date, hoursWorked, tasks, status } = req.body;
 
-        const logDate = new Date(date);
-        logDate.setHours(0, 0, 0, 0);
+        const dateStr = date.includes('T') ? date.split('T')[0] : date;
+        const logDate = new Date(`${dateStr}T00:00:00.000Z`);
 
-        let log = await DailyLog.findOne({
-            date: logDate,
-        });
+        let log = await DailyLog.findOne({ userId, date: logDate });
 
         if (log) {
-            // Update existing log
             log.hoursWorked = hoursWorked ?? log.hoursWorked;
             log.tasks = tasks ?? log.tasks;
             log.status = status ?? log.status;
             await log.save();
         } else {
-            // Create new log
             log = await DailyLog.create({
+                userId,
                 date: logDate,
                 hoursWorked: hoursWorked ?? 8,
                 tasks: tasks ?? '',
@@ -73,18 +73,15 @@ router.post('/', async (req: Request, res: Response) => {
     }
 });
 
-// DELETE /api/logs/:date - Delete a log entry
+// DELETE /api/logs/:date - Delete a log entry for current user
 router.delete('/:date', async (req: Request, res: Response) => {
     try {
+        const userId = req.user!._id;
         const { date } = req.params;
-        const startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
+        const dateStr = date.includes('T') ? date.split('T')[0] : date;
+        const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
 
-        const result = await DailyLog.deleteOne({
-            date: { $gte: startOfDay, $lte: endOfDay },
-        });
+        const result = await DailyLog.deleteOne({ userId, date: targetDate });
 
         if (result.deletedCount === 0) {
             return res.status(404).json({ error: 'Log not found' });
@@ -97,10 +94,11 @@ router.delete('/:date', async (req: Request, res: Response) => {
     }
 });
 
-// DELETE /api/logs - Delete all logs (reset)
-router.delete('/', async (_req: Request, res: Response) => {
+// DELETE /api/logs - Delete all logs for current user (reset)
+router.delete('/', async (req: Request, res: Response) => {
     try {
-        await DailyLog.deleteMany({});
+        const userId = req.user!._id;
+        await DailyLog.deleteMany({ userId });
         res.json({ message: 'All logs deleted successfully' });
     } catch (error) {
         console.error('Error deleting all logs:', error);
