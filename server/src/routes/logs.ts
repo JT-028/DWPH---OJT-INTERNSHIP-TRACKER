@@ -24,8 +24,17 @@ router.get('/:date', async (req: Request, res: Response) => {
     try {
         const userId = req.user!._id;
         const { date } = req.params;
-        const dateStr = date.includes('T') ? date.split('T')[0] : date;
+        
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+        
+        const dateStr = typeof date === 'string' && date.includes('T') ? date.split('T')[0] : date;
         const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+
+        if (isNaN(targetDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid date format' });
+        }
 
         const log = await DailyLog.findOne({ userId, date: targetDate });
 
@@ -36,7 +45,7 @@ router.get('/:date', async (req: Request, res: Response) => {
         res.json(log);
     } catch (error) {
         console.error('Error fetching log:', error);
-        res.status(500).json({ error: 'Failed to fetch log' });
+        res.status(500).json({ error: 'Failed to fetch log', details: String(error) });
     }
 });
 
@@ -46,8 +55,18 @@ router.post('/', async (req: Request, res: Response) => {
         const userId = req.user!._id;
         const { date, hoursWorked, tasks, status } = req.body;
 
-        const dateStr = date.includes('T') ? date.split('T')[0] : date;
+        // Validate required fields
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        const dateStr = typeof date === 'string' && date.includes('T') ? date.split('T')[0] : date;
         const logDate = new Date(`${dateStr}T00:00:00.000Z`);
+
+        // Validate date is valid
+        if (isNaN(logDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid date format' });
+        }
 
         let log = await DailyLog.findOne({ userId, date: logDate });
 
@@ -69,7 +88,7 @@ router.post('/', async (req: Request, res: Response) => {
         res.json(log);
     } catch (error) {
         console.error('Error saving log:', error);
-        res.status(500).json({ error: 'Failed to save log' });
+        res.status(500).json({ error: 'Failed to save log', details: String(error) });
     }
 });
 
@@ -78,8 +97,17 @@ router.delete('/:date', async (req: Request, res: Response) => {
     try {
         const userId = req.user!._id;
         const { date } = req.params;
-        const dateStr = date.includes('T') ? date.split('T')[0] : date;
+        
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+        
+        const dateStr = typeof date === 'string' && date.includes('T') ? date.split('T')[0] : date;
         const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+
+        if (isNaN(targetDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid date format' });
+        }
 
         const result = await DailyLog.deleteOne({ userId, date: targetDate });
 
@@ -90,7 +118,7 @@ router.delete('/:date', async (req: Request, res: Response) => {
         res.json({ message: 'Log deleted successfully' });
     } catch (error) {
         console.error('Error deleting log:', error);
-        res.status(500).json({ error: 'Failed to delete log' });
+        res.status(500).json({ error: 'Failed to delete log', details: String(error) });
     }
 });
 
