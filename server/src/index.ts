@@ -32,6 +32,17 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Connect to MongoDB before handling any API routes
+app.use('/api', async (_req, _res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error('DB connection error:', error);
+        next(error);
+    }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -45,13 +56,12 @@ app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Connect to MongoDB and start server
-const startServer = async () => {
-    await connectDB();
-
+// For local development
+if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
         console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
-};
+}
 
-startServer();
+// Export for Vercel serverless
+export default app;

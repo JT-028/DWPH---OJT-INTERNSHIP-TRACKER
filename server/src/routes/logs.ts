@@ -52,8 +52,16 @@ router.get('/:date', async (req: Request, res: Response) => {
 // POST /api/logs - Create or update a daily log for current user
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const userId = req.user!._id;
+        // Verify user exists
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        const userId = req.user._id;
         const { date, hoursWorked, tasks, status } = req.body;
+
+        console.log('POST /api/logs - Request body:', { date, hoursWorked, tasks, status });
+        console.log('POST /api/logs - userId:', userId);
 
         // Validate required fields
         if (!date) {
@@ -63,6 +71,8 @@ router.post('/', async (req: Request, res: Response) => {
         const dateStr = typeof date === 'string' && date.includes('T') ? date.split('T')[0] : date;
         const logDate = new Date(`${dateStr}T00:00:00.000Z`);
 
+        console.log('POST /api/logs - Parsed date:', logDate);
+
         // Validate date is valid
         if (isNaN(logDate.getTime())) {
             return res.status(400).json({ error: 'Invalid date format' });
@@ -71,11 +81,13 @@ router.post('/', async (req: Request, res: Response) => {
         let log = await DailyLog.findOne({ userId, date: logDate });
 
         if (log) {
+            console.log('POST /api/logs - Updating existing log');
             log.hoursWorked = hoursWorked ?? log.hoursWorked;
             log.tasks = tasks ?? log.tasks;
             log.status = status ?? log.status;
             await log.save();
         } else {
+            console.log('POST /api/logs - Creating new log');
             log = await DailyLog.create({
                 userId,
                 date: logDate,
@@ -85,10 +97,18 @@ router.post('/', async (req: Request, res: Response) => {
             });
         }
 
+        console.log('POST /api/logs - Success:', log._id);
         res.json(log);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error saving log:', error);
-        res.status(500).json({ error: 'Failed to save log', details: String(error) });
+        console.error('Error name:', error?.name);
+        console.error('Error message:', error?.message);
+        console.error('Error stack:', error?.stack);
+        res.status(500).json({ 
+            error: 'Failed to save log', 
+            details: error?.message || String(error),
+            name: error?.name 
+        });
     }
 });
 

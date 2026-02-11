@@ -142,9 +142,10 @@ function App() {
       const progressData = await progressApi.get()
       setProgress(progressData)
       toast.success("Log saved successfully")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save log:", error)
-      toast.error("Failed to save log")
+      const errorDetails = error?.response?.data?.details || error?.response?.data?.error || "Unknown error"
+      toast.error(`Failed to save log: ${errorDetails}`)
     }
   }, [])
 
