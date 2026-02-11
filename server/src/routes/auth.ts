@@ -105,7 +105,8 @@ router.post('/seed-admin', async (req: Request, res: Response) => {
         const { seedKey } = req.body;
 
         // Simple security: require a seed key that matches JWT_SECRET
-        if (seedKey !== process.env.JWT_SECRET) {
+        const jwtSecret = (process.env.JWT_SECRET || '').trim();
+        if (!seedKey || seedKey.trim() !== jwtSecret) {
             res.status(403).json({ error: 'Invalid seed key' });
             return;
         }
