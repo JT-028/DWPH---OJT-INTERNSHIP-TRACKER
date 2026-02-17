@@ -8,7 +8,7 @@ const router = Router();
 // POST /api/auth/register - Register a new intern account
 router.post('/register', async (req: Request, res: Response) => {
     try {
-        const { email, password, name } = req.body;
+        const { email, password, name, department } = req.body;
 
         // Validate required fields
         if (!email || !password || !name) {
@@ -34,6 +34,7 @@ router.post('/register', async (req: Request, res: Response) => {
             password,
             name,
             role: 'intern',
+            department: department || '',
         });
 
         const token = generateToken(String(user._id));

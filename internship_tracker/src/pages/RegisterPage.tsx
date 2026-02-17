@@ -4,9 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, UserPlus, Eye, EyeOff, AlertCircle, X } from 'lucide-react';
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
+import { Loader2, UserPlus, Eye, EyeOff, AlertCircle, X, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Department } from '@/types';
+
+const DEPARTMENTS: { value: string; label: string }[] = [
+    { value: 'none', label: 'Select your internship type' },
+    { value: 'Creative & Marketing Support Associates', label: 'Creative & Marketing Support' },
+    { value: 'Recruitment Support Interns', label: 'Recruitment Support' },
+    { value: 'IT Support Interns', label: 'IT Support' },
+];
 
 export function RegisterPage() {
     const { register } = useAuth();
@@ -15,6 +27,7 @@ export function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [department, setDepartment] = useState<string>('none');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,6 +38,11 @@ export function RegisterPage() {
 
         if (!name || !email || !password || !confirmPassword) {
             setErrorMessage('Please fill in all fields');
+            return;
+        }
+
+        if (department === 'none') {
+            setErrorMessage('Please select your internship type');
             return;
         }
 
@@ -40,7 +58,8 @@ export function RegisterPage() {
 
         setIsLoading(true);
         try {
-            await register(name, email, password);
+            const deptValue = (department === 'none' ? '' : department) as Department;
+            await register(name, email, password, deptValue);
             toast.success('Account created successfully!');
             navigate('/');
         } catch (error: any) {
@@ -148,6 +167,24 @@ export function RegisterPage() {
                                     disabled={isLoading}
                                     className="bg-background/50"
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                    <Building2 className="h-4 w-4" />
+                                    Internship Type
+                                </Label>
+                                <Select value={department} onValueChange={setDepartment} disabled={isLoading}>
+                                    <SelectTrigger className="bg-background/50">
+                                        <SelectValue placeholder="Select your internship type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {DEPARTMENTS.map((dept) => (
+                                            <SelectItem key={dept.value} value={dept.value}>
+                                                {dept.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="register-password" className="text-sm font-medium text-foreground">

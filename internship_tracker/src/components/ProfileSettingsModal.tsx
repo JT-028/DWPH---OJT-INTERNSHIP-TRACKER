@@ -21,8 +21,8 @@ interface ProfileSettingsModalProps {
     onClose: () => void;
 }
 
-const DEPARTMENTS: { value: Department; label: string }[] = [
-    { value: '', label: 'Not Assigned' },
+const DEPARTMENTS: { value: string; label: string }[] = [
+    { value: 'none', label: 'Not Assigned' },
     { value: 'Creative & Marketing Support Associates', label: 'Creative & Marketing Support' },
     { value: 'Recruitment Support Interns', label: 'Recruitment Support' },
     { value: 'IT Support Interns', label: 'IT Support' },
@@ -31,7 +31,7 @@ const DEPARTMENTS: { value: Department; label: string }[] = [
 export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalProps) {
     const { user, refreshUser } = useAuth();
     const [name, setName] = useState('');
-    const [department, setDepartment] = useState<Department>('');
+    const [department, setDepartment] = useState<string>('none');
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,7 +41,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
     useEffect(() => {
         if (user && isOpen) {
             setName(user.name || '');
-            setDepartment(user.department || '');
+            setDepartment(user.department || 'none');
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
@@ -75,7 +75,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
         try {
             const updateData: { name?: string; department?: Department; currentPassword?: string; newPassword?: string } = {
                 name: name.trim(),
-                department,
+                department: (department === 'none' ? '' : department) as Department,
             };
 
             if (showPasswordSection && currentPassword && newPassword) {
@@ -152,7 +152,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                             <Building2 className="h-4 w-4" />
                             Department
                         </Label>
-                        <Select value={department} onValueChange={(v) => setDepartment(v as Department)} disabled={isLoading}>
+                        <Select value={department} onValueChange={setDepartment} disabled={isLoading}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select department" />
                             </SelectTrigger>

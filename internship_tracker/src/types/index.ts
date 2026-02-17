@@ -31,6 +31,7 @@ export interface RegisterData {
     name: string;
     email: string;
     password: string;
+    department?: Department;
 }
 
 export interface InternSettings {

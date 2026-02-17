@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { authApi } from '@/lib/api';
-import type { User } from '@/types';
+import type { User, Department } from '@/types';
 
 interface AuthContextType {
     user: User | null;
@@ -11,7 +11,7 @@ interface AuthContextType {
     isSubAdmin: boolean;
     isAdminOrSubAdmin: boolean;
     login: (email: string, password: string) => Promise<User>;
-    register: (name: string, email: string, password: string) => Promise<void>;
+    register: (name: string, email: string, password: string, department?: Department) => Promise<void>;
     logout: () => void;
     refreshUser: () => Promise<void>;
 }
@@ -59,8 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return response.user; // Return user for role-based redirect
     }, []);
 
-    const register = useCallback(async (name: string, email: string, password: string) => {
-        const response = await authApi.register({ name, email, password });
+    const register = useCallback(async (name: string, email: string, password: string, department?: Department) => {
+        const response = await authApi.register({ name, email, password, department });
         localStorage.setItem('auth_token', response.token);
         localStorage.setItem('auth_user', JSON.stringify(response.user));
         setToken(response.token);

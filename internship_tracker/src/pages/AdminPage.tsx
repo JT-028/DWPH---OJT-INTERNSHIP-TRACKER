@@ -16,9 +16,12 @@ import {
     AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
+import {
     Users, Shield, ShieldCheck, UserPlus, Trash2, Search,
     Loader2, ToggleLeft, ToggleRight, LogOut,
-    Crown, UserCog, GraduationCap, Eye, FileText, UserCheck, Clock, Settings
+    Crown, UserCog, GraduationCap, Eye, FileText, UserCheck, Clock, Settings, Building2, Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -39,6 +42,7 @@ export function AdminPage() {
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isSupervisorOpen, setIsSupervisorOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [departmentFilter, setDepartmentFilter] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newSubAdmin, setNewSubAdmin] = useState({ name: '', email: '', password: '' });
@@ -63,20 +67,31 @@ export function AdminPage() {
     }, [fetchUsers]);
 
     useEffect(() => {
+        let filtered = users;
+
+        // Apply search filter
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
-            setFilteredUsers(
-                users.filter(
-                    (u) =>
-                        u.name.toLowerCase().includes(q) ||
-                        u.email.toLowerCase().includes(q) ||
-                        u.role.toLowerCase().includes(q)
-                )
+            filtered = filtered.filter(
+                (u) =>
+                    u.name.toLowerCase().includes(q) ||
+                    u.email.toLowerCase().includes(q) ||
+                    u.role.toLowerCase().includes(q)
             );
-        } else {
-            setFilteredUsers(users);
         }
-    }, [searchQuery, users]);
+
+        // Apply department filter
+        if (departmentFilter !== 'all') {
+            filtered = filtered.filter((u) => {
+                if (departmentFilter === 'none') {
+                    return !u.department;
+                }
+                return u.department === departmentFilter;
+            });
+        }
+
+        setFilteredUsers(filtered);
+    }, [searchQuery, departmentFilter, users]);
 
     const handleToggleActive = async (userId: string, currentStatus: boolean) => {
         try {
@@ -414,14 +429,46 @@ export function AdminPage() {
                 <>
                 {/* Toolbar */}
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-                    <div className="relative w-full sm:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by name, email, or role..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 bg-background/50"
-                        />
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-80">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search by name, email, or role..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10 bg-background/50"
+                            />
+                        </div>
+                        <div className="relative w-full sm:w-64">
+                            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                                <SelectTrigger className="bg-background/50">
+                                    <div className="flex items-center gap-2">
+                                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                                        <SelectValue placeholder="All Departments" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        <div className="flex items-center gap-2">
+                                            <Filter className="h-4 w-4" />
+                                            <span>All Departments</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="Creative & Marketing Support Associates">
+                                        <span>Creative & Marketing Support</span>
+                                    </SelectItem>
+                                    <SelectItem value="Recruitment Support Interns">
+                                        <span>Recruitment Support</span>
+                                    </SelectItem>
+                                    <SelectItem value="IT Support Interns">
+                                        <span>IT Support</span>
+                                    </SelectItem>
+                                    <SelectItem value="none">
+                                        <span>Not Assigned</span>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     {isAdmin && (
                         <div className="flex items-center gap-2">
@@ -503,7 +550,7 @@ export function AdminPage() {
                             </div>
                         ) : filteredUsers.length === 0 ? (
                             <div className="text-center py-12 text-muted-foreground">
-                                {searchQuery ? 'No users match your search' : 'No users found'}
+                                {searchQuery || departmentFilter !== 'all' ? 'No users match your filters' : 'No users found'}
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
@@ -513,6 +560,7 @@ export function AdminPage() {
                                             <th className="text-left py-3 px-4 font-medium text-muted-foreground">Name</th>
                                             <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">Email</th>
                                             <th className="text-left py-3 px-4 font-medium text-muted-foreground">Role</th>
+                                            <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden xl:table-cell">Department</th>
                                             <th className="text-center py-3 px-4 font-medium text-muted-foreground">Status</th>
                                             <th className="text-center py-3 px-4 font-medium text-muted-foreground hidden lg:table-cell">Hours</th>
                                             <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
@@ -546,6 +594,19 @@ export function AdminPage() {
                                                             {getRoleIcon(user.role)}
                                                             {user.role}
                                                         </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-muted-foreground hidden xl:table-cell">
+                                                        {user.department ? (
+                                                            <span className="inline-flex items-center gap-1.5 text-xs">
+                                                                <Building2 className="h-3 w-3" />
+                                                                {user.department === 'Creative & Marketing Support Associates' ? 'Creative & Marketing' :
+                                                                 user.department === 'Recruitment Support Interns' ? 'Recruitment' :
+                                                                 user.department === 'IT Support Interns' ? 'IT Support' :
+                                                                 user.department}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground/50">Not assigned</span>
+                                                        )}
                                                     </td>
                                                     <td className="py-3 px-4 text-center">
                                                         {user.isActive ? (
