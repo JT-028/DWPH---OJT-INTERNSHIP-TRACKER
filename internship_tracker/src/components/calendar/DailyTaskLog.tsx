@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Save, Minus, Plus, ClipboardList, Trash2, Sparkles } from "lucide-react"
+import { Save, Minus, Plus, ClipboardList, Trash2, Sparkles, CheckCircle2, Clock, Star } from "lucide-react"
 import { format } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -132,6 +133,61 @@ export function DailyTaskLog({ selectedDate, existingLog, defaultHours, onSave, 
                                     {format(selectedDate, "EEEE, MMM do")}
                                 </p>
                             </motion.div>
+                            
+                            {/* Validation Status */}
+                            {existingLog && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className={`px-3 py-2 rounded-lg border ${
+                                        existingLog.isValidated 
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-400'
+                                            : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2 text-sm">
+                                        {existingLog.isValidated ? (
+                                            <>
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                <span className="font-medium">Validated</span>
+                                                {existingLog.validatedAt && (
+                                                    <span className="text-xs opacity-75">
+                                                        on {format(new Date(existingLog.validatedAt), 'MMM d')}
+                                                    </span>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Clock className="h-4 w-4" />
+                                                <span className="font-medium">Pending Validation</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    {existingLog.isValidated && existingLog.validationNotes && (
+                                        <p className="text-xs mt-1 opacity-90 italic">
+                                            "{existingLog.validationNotes}"
+                                        </p>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {/* Special Workday Status */}
+                            {existingLog?.isSpecialWorkday && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.25 }}
+                                >
+                                    <Badge variant="outline" className="border-purple-500/50 text-purple-600 bg-purple-50 dark:bg-purple-950 dark:text-purple-400">
+                                        <Star className="h-3 w-3 mr-1 fill-current" />
+                                        Special Workday
+                                        {existingLog.specialWorkdayReason && (
+                                            <span className="ml-1 opacity-75">- {existingLog.specialWorkdayReason}</span>
+                                        )}
+                                    </Badge>
+                                </motion.div>
+                            )}
                             <motion.div
                                 initial={{ opacity: 0, x: 10 }}
                                 animate={{ opacity: 1, x: 0 }}

@@ -19,15 +19,24 @@ import {
 import {
     Users, Shield, ShieldCheck, UserPlus, Trash2, Search,
     ArrowLeft, Loader2, ToggleLeft, ToggleRight,
-    Crown, UserCog, GraduationCap
+    Crown, UserCog, GraduationCap, Eye, FileText, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+    InternDetailsModal,
+    SupervisorAssignment,
+    ReportsPanel
+} from '@/components/admin';
 
 export function AdminPage() {
     const { user: currentUser, isAdmin } = useAuth();
     const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+    const [activeTab, setActiveTab] = useState<'users' | 'reports'>('users');
+    const [selectedIntern, setSelectedIntern] = useState<User | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [isSupervisorOpen, setIsSupervisorOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -213,6 +222,37 @@ export function AdminPage() {
                     ))}
                 </div>
 
+                {/* Tab Navigation */}
+                <div className="flex gap-2 border-b border-border/50">
+                    <button
+                        onClick={() => setActiveTab('users')}
+                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
+                            activeTab === 'users'
+                                ? 'border-amber-500 text-amber-500'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Users className="h-4 w-4 inline mr-2" />
+                        User Management
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('reports')}
+                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
+                            activeTab === 'reports'
+                                ? 'border-amber-500 text-amber-500'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <FileText className="h-4 w-4 inline mr-2" />
+                        Reports
+                    </button>
+                </div>
+
+                {/* Tab Content */}
+                {activeTab === 'reports' ? (
+                    <ReportsPanel users={users} />
+                ) : (
+                <>
                 {/* Toolbar */}
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                     <div className="relative w-full sm:w-80">
@@ -348,6 +388,38 @@ export function AdminPage() {
                                                     </td>
                                                     <td className="py-3 px-4">
                                                         <div className="flex items-center justify-end gap-1">
+                                                            {/* View Logs - for interns only */}
+                                                            {user.role === 'intern' && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 hover:bg-amber-500/10"
+                                                                    onClick={() => {
+                                                                        setSelectedIntern(user);
+                                                                        setIsDetailsOpen(true);
+                                                                    }}
+                                                                    title="View Logs"
+                                                                >
+                                                                    <Eye className="h-4 w-4 text-amber-500" />
+                                                                </Button>
+                                                            )}
+
+                                                            {/* Assign Supervisor - main admin only, for interns */}
+                                                            {isAdmin && user.role === 'intern' && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 hover:bg-blue-500/10"
+                                                                    onClick={() => {
+                                                                        setSelectedIntern(user);
+                                                                        setIsSupervisorOpen(true);
+                                                                    }}
+                                                                    title="Assign Supervisor"
+                                                                >
+                                                                    <UserCheck className="h-4 w-4 text-blue-500" />
+                                                                </Button>
+                                                            )}
+
                                                             {/* Toggle Active - admin and sub-admin can do this */}
                                                             {user.role !== 'admin' && (
                                                                 <Button
@@ -425,7 +497,30 @@ export function AdminPage() {
                         )}
                     </CardContent>
                 </Card>
+                </>
+                )}
             </main>
+
+            {/* Modals */}
+            <InternDetailsModal
+                intern={selectedIntern}
+                isOpen={isDetailsOpen}
+                onClose={() => {
+                    setIsDetailsOpen(false);
+                    setSelectedIntern(null);
+                }}
+                onUpdate={fetchUsers}
+            />
+
+            <SupervisorAssignment
+                intern={selectedIntern}
+                isOpen={isSupervisorOpen}
+                onClose={() => {
+                    setIsSupervisorOpen(false);
+                    setSelectedIntern(null);
+                }}
+                onUpdate={fetchUsers}
+            />
         </div>
     );
 }

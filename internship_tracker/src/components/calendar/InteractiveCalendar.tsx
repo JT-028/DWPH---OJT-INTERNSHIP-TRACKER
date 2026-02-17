@@ -18,7 +18,8 @@ interface InteractiveCalendarProps {
 const legends = [
     { label: "Today", className: "border-2 border-amber bg-amber/10", icon: null },
     { label: "Holiday", className: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", icon: "★" },
-    { label: "Logged", className: "bg-green/10 border-2 border-green text-green", icon: "✓" },
+    { label: "Validated", className: "bg-emerald-500/20 border-2 border-emerald-500 text-emerald-600", icon: "✓" },
+    { label: "Logged", className: "bg-green/10 border-2 border-green text-green", icon: "⌚" },
     { label: "Off", className: "bg-muted/40 text-muted-foreground/60", icon: null },
 ]
 
@@ -62,6 +63,16 @@ export function InteractiveCalendar({
         return logs.some((log) => log.date.split('T')[0] === dateStr)
     }
 
+    const getLogForDate = (date: Date) => {
+        const dateStr = format(date, "yyyy-MM-dd")
+        return logs.find((log) => log.date.split('T')[0] === dateStr)
+    }
+
+    const isValidated = (date: Date) => {
+        const log = getLogForDate(date)
+        return log?.isValidated || false
+    }
+
     const isHoliday = (date: Date) => {
         const dateStr = format(date, "yyyy-MM-dd")
         return holidays.find((h) => h.date === dateStr)
@@ -79,7 +90,9 @@ export function InteractiveCalendar({
 
     const getDayStatus = (date: Date) => {
         // Check logged FIRST - logged days should always show as logged
-        if (isLogged(date)) return "logged"
+        if (isLogged(date)) {
+            return isValidated(date) ? "validated" : "logged"
+        }
         
         if (isBeforeStartDate(date)) return "before-start"
         if (!isWorkday(date)) return "non-workday"
@@ -204,8 +217,9 @@ export function InteractiveCalendar({
                                     const status = getDayStatus(day)
                                     const holiday = isHoliday(day)
                                     const isSelected = selectedDate && isSameDay(day, selectedDate)
+                                    const logData = getLogForDate(day)
                                     // Logged days are always clickable
-                                    const isClickable = status === "logged" || 
+                                    const isClickable = status === "logged" || status === "validated" || 
                                         (status !== "before-start" && status !== "non-workday" &&
                                         !(status === "holiday" && settings.excludeHolidays))
 
@@ -223,7 +237,9 @@ export function InteractiveCalendar({
                                                 status === "before-start" ? "Before start date" :
                                                     status === "non-workday" ? "Non-workday" :
                                                         status === "holiday" ? holiday?.name :
-                                                            undefined
+                                                            status === "validated" ? `Validated log - ${logData?.validationNotes || 'No notes'}` :
+                                                                status === "logged" ? "Pending validation" :
+                                                                    undefined
                                             }
                                             className={cn(
                                                 "aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-all duration-200 relative",
@@ -231,6 +247,7 @@ export function InteractiveCalendar({
                                                 status === "before-start" && "text-muted-foreground/30 line-through cursor-not-allowed bg-muted/20",
                                                 status === "non-workday" && "text-muted-foreground/40 cursor-not-allowed bg-muted/10",
                                                 status === "holiday" && "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 cursor-not-allowed",
+                                                status === "validated" && "bg-emerald-500/20 text-emerald-600 border-2 border-emerald-500 font-bold shadow-md",
                                                 status === "logged" && "bg-green/20 text-green border-2 border-green font-bold",
                                                 status === "today" && "border-2 border-amber bg-amber/10 font-bold shadow-md",
                                                 status === "active" && "hover:bg-primary/10 hover:border-primary/50 border border-transparent",
@@ -242,13 +259,22 @@ export function InteractiveCalendar({
                                         >
                                             <span>{format(day, "d")}</span>
                                             {status === "holiday" && <span className="text-[10px] absolute -top-0.5 right-0.5">★</span>}
+                                            {status === "validated" && (
+                                                <motion.span
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    className="text-[10px] absolute bottom-0.5 text-emerald-600"
+                                                >
+                                                    ✓
+                                                </motion.span>
+                                            )}
                                             {status === "logged" && (
                                                 <motion.span
                                                     initial={{ scale: 0 }}
                                                     animate={{ scale: 1 }}
                                                     className="text-[10px] absolute bottom-0.5"
                                                 >
-                                                    ✓
+                                                    ⌚
                                                 </motion.span>
                                             )}
                                             {isToday(day) && (

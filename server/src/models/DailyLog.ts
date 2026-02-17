@@ -8,6 +8,15 @@ export interface IDailyLog extends Document {
     hoursWorked: number;
     tasks: string;
     status: LogStatus;
+    // Special workday fields (weekends/holidays marked as workday)
+    isSpecialWorkday: boolean;
+    specialWorkdayReason?: string;
+    markedByAdmin?: mongoose.Types.ObjectId;
+    // Validation fields (IS verification)
+    isValidated: boolean;
+    validatedBy?: mongoose.Types.ObjectId;
+    validatedAt?: Date;
+    validationNotes?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -40,6 +49,35 @@ const DailyLogSchema = new Schema<IDailyLog>(
             enum: ['scheduled', 'completed', 'holiday', 'off'],
             default: 'scheduled',
         },
+        // Special workday fields
+        isSpecialWorkday: {
+            type: Boolean,
+            default: false,
+        },
+        specialWorkdayReason: {
+            type: String,
+            default: '',
+        },
+        markedByAdmin: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+        },
+        // Validation fields
+        isValidated: {
+            type: Boolean,
+            default: false,
+        },
+        validatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+        },
+        validatedAt: {
+            type: Date,
+        },
+        validationNotes: {
+            type: String,
+            default: '',
+        },
     },
     {
         timestamps: true,
@@ -48,5 +86,7 @@ const DailyLogSchema = new Schema<IDailyLog>(
 
 // Compound unique index: one log per user per date
 DailyLogSchema.index({ userId: 1, date: 1 }, { unique: true });
+// Index for finding unvalidated logs
+DailyLogSchema.index({ userId: 1, isValidated: 1 });
 
 export default mongoose.model<IDailyLog>('DailyLog', DailyLogSchema);

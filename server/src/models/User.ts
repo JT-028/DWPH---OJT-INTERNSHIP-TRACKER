@@ -9,6 +9,8 @@ export interface IUser extends Document {
     name: string;
     role: UserRole;
     isActive: boolean;
+    // Supervisor assignment (for interns - who supervises them)
+    supervisors: mongoose.Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
     comparePassword(candidatePassword: string): Promise<boolean>;
@@ -42,6 +44,10 @@ const UserSchema = new Schema<IUser>(
             type: Boolean,
             default: true,
         },
+        supervisors: [{
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+        }],
     },
     {
         timestamps: true,

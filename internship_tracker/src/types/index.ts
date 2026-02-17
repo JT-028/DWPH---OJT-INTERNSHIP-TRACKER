@@ -7,6 +7,7 @@ export interface User {
     name: string;
     role: UserRole;
     isActive: boolean;
+    supervisors?: string[]; // Array of supervisor user IDs
     createdAt?: string;
     updatedAt?: string;
     // Populated by admin endpoints
@@ -50,6 +51,15 @@ export interface DailyLog {
     hoursWorked: number;
     tasks: string;
     status: LogStatus;
+    // Special workday fields (weekends/holidays marked as workday)
+    isSpecialWorkday?: boolean;
+    specialWorkdayReason?: string;
+    markedByAdmin?: string;
+    // Validation fields (IS verification)
+    isValidated?: boolean;
+    validatedBy?: string;
+    validatedAt?: string;
+    validationNotes?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -96,6 +106,33 @@ export interface UserProgress {
     progress: {
         totalHoursCompleted: number;
         totalDaysCompleted: number;
+        remainingHours: number;
+        progressPercentage: number;
+        targetHours: number;
+    };
+    logs: DailyLog[];
+}
+
+export interface InternReportData {
+    user: {
+        _id: string;
+        name: string;
+        email: string;
+        role: UserRole;
+        supervisors?: Array<{ _id: string; name: string; email: string }>;
+        createdAt?: string;
+    };
+    settings: {
+        targetHours: number;
+        startDate: string;
+        hoursPerDay: number;
+        workDays: number[];
+    } | null;
+    summary: {
+        totalHoursCompleted: number;
+        totalDaysCompleted: number;
+        totalDaysValidated: number;
+        totalSpecialWorkdays: number;
         remainingHours: number;
         progressPercentage: number;
         targetHours: number;
