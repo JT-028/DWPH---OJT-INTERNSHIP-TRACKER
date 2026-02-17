@@ -99,6 +99,51 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to get user info' });
     }
 });
+
+// PUT /api/auth/profile - Update current user's profile
+router.put('/profile', authenticate, async (req: Request, res: Response) => {
+    try {
+        const { name, department, currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user?._id);
+
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        // Update name if provided
+        if (name && name.trim()) {
+            user.name = name.trim();
+        }
+
+        // Update department if provided (and valid)
+        const validDepartments = ['Creative & Marketing Support Associates', 'Recruitment Support Interns', 'IT Support Interns', ''];
+        if (department !== undefined && validDepartments.includes(department)) {
+            user.department = department;
+        }
+
+        // Update password if both current and new are provided
+        if (currentPassword && newPassword) {
+            const isMatch = await user.comparePassword(currentPassword);
+            if (!isMatch) {
+                res.status(400).json({ error: 'Current password is incorrect' });
+                return;
+            }
+            if (newPassword.length < 6) {
+                res.status(400).json({ error: 'New password must be at least 6 characters' });
+                return;
+            }
+            user.password = newPassword;
+        }
+
+        await user.save();
+        res.json(user.toJSON());
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
 // POST /api/auth/seed-admin - One-time admin seed (secured by seed key)
 router.post('/seed-admin', async (req: Request, res: Response) => {
     try {

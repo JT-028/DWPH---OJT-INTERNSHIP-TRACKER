@@ -1,13 +1,19 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Shield, LogOut, Sparkles } from "lucide-react"
+import { Shield, LogOut, Sparkles, User, Settings } from "lucide-react"
 import { SetupSection } from "@/components/setup"
 import { ProgressSection } from "@/components/progress"
 import { CalendarSection } from "@/components/calendar"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { MembershipFooter } from "@/components/footer"
 import { Button } from "@/components/ui/button"
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+    AlertDialogTitle, AlertDialogTrigger
+} from "@/components/ui/alert-dialog"
+import { ProfileSettingsModal } from "@/components/ProfileSettingsModal"
 import { settingsApi, logsApi, progressApi, reportsApi } from "@/lib/api"
 import { downloadCSV, downloadPDF } from "@/lib/reportGenerator"
 import { Toaster, toast } from "sonner"
@@ -50,7 +56,7 @@ const itemVariants = {
 }
 
 function App() {
-  const { logout, isAdminOrSubAdmin } = useAuth()
+  const { logout, isAdminOrSubAdmin, user } = useAuth()
   const navigate = useNavigate()
   const [settings, setSettings] = useState<InternSettings>(defaultSettings)
   const [logs, setLogs] = useState<DailyLog[]>([])
@@ -59,6 +65,7 @@ function App() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   // Track scroll position for floating theme toggle
   useEffect(() => {
@@ -316,6 +323,21 @@ function App() {
               transition={{ type: "spring", stiffness: 100, damping: 12 }}
               className={`flex-1 flex items-center justify-end gap-2 ${isScrolled ? "pointer-events-none" : ""}`}
             >
+              {/* User info */}
+              <div className="flex items-center gap-1 text-white/80 text-xs">
+                <User className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{user?.name}</span>
+              </div>
+              {/* Profile Settings */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsProfileOpen(true)}
+                className="text-white/80 hover:text-white hover:bg-white/10 text-xs gap-1.5 h-8"
+                title="Profile Settings"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
               {isAdminOrSubAdmin && (
                 <Button
                   variant="ghost"
@@ -330,15 +352,32 @@ function App() {
               <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 hover:bg-white/20 transition-colors duration-200">
                 <ThemeToggle />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { logout(); navigate('/login'); }}
-                className="text-white/80 hover:text-white hover:bg-white/10 text-xs gap-1.5 h-8"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white/80 hover:text-white hover:bg-white/10 text-xs gap-1.5 h-8"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Logout</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to logout? You will need to sign in again to access your internship tracker.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => { logout(); navigate('/login'); }}>
+                      Logout
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </motion.div>
           </div>
         </header>
@@ -412,6 +451,12 @@ function App() {
         {/* Footer */}
         <MembershipFooter />
         <Toaster position="top-right" richColors />
+        
+        {/* Profile Settings Modal */}
+        <ProfileSettingsModal 
+          isOpen={isProfileOpen} 
+          onClose={() => setIsProfileOpen(false)} 
+        />
       </div>
     </TooltipProvider>
   )

@@ -429,8 +429,9 @@ router.get('/pending-validations', requireAdminOrSubAdmin, async (req: Request, 
             internIds = assignedInterns.map(i => i._id.toString());
         }
 
+        // Return early if no interns assigned (for sub-admins)
         if (internIds.length === 0) {
-            res.json({ logs: [], grouped: {} });
+            res.json({ logs: [], grouped: {}, assignedInternCount: 0 });
             return;
         }
 
@@ -453,7 +454,7 @@ router.get('/pending-validations', requireAdminOrSubAdmin, async (req: Request, 
             grouped[internId].push(log);
         });
 
-        res.json({ logs, grouped });
+        res.json({ logs, grouped, assignedInternCount: internIds.length });
     } catch (error) {
         console.error('Error fetching pending validations:', error);
         res.status(500).json({ error: 'Failed to fetch pending validations' });

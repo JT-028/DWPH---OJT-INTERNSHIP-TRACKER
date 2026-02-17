@@ -2,7 +2,7 @@ import axios from 'axios';
 import type {
     InternSettings, DailyLog, InternProgress, ReportData, Holiday,
     AuthResponse, LoginCredentials, RegisterData, User, UserProgress,
-    InternReportData
+    InternReportData, Department
 } from '@/types';
 
 // Use environment variable for API base URL, fallback to local proxy in development
@@ -54,6 +54,11 @@ export const authApi = {
 
     me: async (): Promise<User> => {
         const { data } = await api.get('/auth/me');
+        return data;
+    },
+
+    updateProfile: async (profileData: { name?: string; department?: Department; currentPassword?: string; newPassword?: string }): Promise<User> => {
+        const { data } = await api.put('/auth/profile', profileData);
         return data;
     },
 };

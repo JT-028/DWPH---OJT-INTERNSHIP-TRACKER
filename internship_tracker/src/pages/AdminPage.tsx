@@ -18,10 +18,11 @@ import {
 import {
     Users, Shield, ShieldCheck, UserPlus, Trash2, Search,
     Loader2, ToggleLeft, ToggleRight, LogOut,
-    Crown, UserCog, GraduationCap, Eye, FileText, UserCheck, Clock
+    Crown, UserCog, GraduationCap, Eye, FileText, UserCheck, Clock, Settings
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ProfileSettingsModal } from '@/components/ProfileSettingsModal';
 import {
     InternDetailsModal,
     SupervisorAssignment,
@@ -43,6 +44,7 @@ export function AdminPage() {
     const [newSubAdmin, setNewSubAdmin] = useState({ name: '', email: '', password: '' });
     const [isCreating, setIsCreating] = useState(false);
     const [isSelfAssigning, setIsSelfAssigning] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -287,18 +289,45 @@ export function AdminPage() {
                             {getRoleIcon(currentUser?.role || 'intern')}
                             <span className="hidden sm:inline">{currentUser?.name}</span>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 hover:bg-white/20 transition-colors duration-200">
-                            <ThemeToggle />
-                        </div>
+                        {/* Profile Settings */}
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => logout()}
+                            onClick={() => setIsProfileOpen(true)}
                             className="text-white/80 hover:text-white hover:bg-white/10 text-xs gap-1.5 h-8"
+                            title="Profile Settings"
                         >
-                            <LogOut className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">Logout</span>
+                            <Settings className="h-3.5 w-3.5" />
                         </Button>
+                        <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 hover:bg-white/20 transition-colors duration-200">
+                            <ThemeToggle />
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-white/80 hover:text-white hover:bg-white/10 text-xs gap-1.5 h-8"
+                                >
+                                    <LogOut className="h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">Logout</span>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to logout? You will need to sign in again to access the admin dashboard.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => logout()}>
+                                        Logout
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </motion.div>
                 </div>
             </header>
@@ -670,6 +699,11 @@ export function AdminPage() {
                     setSelectedIntern(null);
                 }}
                 onUpdate={fetchUsers}
+            />
+
+            <ProfileSettingsModal
+                isOpen={isProfileOpen}
+                onClose={() => setIsProfileOpen(false)}
             />
         </div>
     );

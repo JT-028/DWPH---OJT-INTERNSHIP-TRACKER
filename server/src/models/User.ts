@@ -3,11 +3,14 @@ import bcrypt from 'bcryptjs';
 
 export type UserRole = 'intern' | 'sub-admin' | 'admin';
 
+export type Department = 'Creative & Marketing Support Associates' | 'Recruitment Support Interns' | 'IT Support Interns' | '';
+
 export interface IUser extends Document {
     email: string;
     password: string;
     name: string;
     role: UserRole;
+    department: Department;
     isActive: boolean;
     // Supervisor assignment (for interns - who supervises them)
     supervisors: mongoose.Types.ObjectId[];
@@ -39,6 +42,11 @@ const UserSchema = new Schema<IUser>(
             type: String,
             enum: ['intern', 'sub-admin', 'admin'],
             default: 'intern',
+        },
+        department: {
+            type: String,
+            enum: ['Creative & Marketing Support Associates', 'Recruitment Support Interns', 'IT Support Interns', ''],
+            default: '',
         },
         isActive: {
             type: Boolean,

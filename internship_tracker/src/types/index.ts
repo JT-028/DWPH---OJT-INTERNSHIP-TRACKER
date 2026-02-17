@@ -1,11 +1,13 @@
 export type LogStatus = 'scheduled' | 'completed' | 'holiday' | 'off';
 export type UserRole = 'intern' | 'sub-admin' | 'admin';
+export type Department = 'Creative & Marketing Support Associates' | 'Recruitment Support Interns' | 'IT Support Interns' | '';
 
 export interface User {
     _id: string;
     email: string;
     name: string;
     role: UserRole;
+    department?: Department;
     isActive: boolean;
     supervisors?: string[]; // Array of supervisor user IDs
     createdAt?: string;

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Loader2, LogIn, Eye, EyeOff, AlertCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function LoginPage() {
@@ -15,12 +15,14 @@ export function LoginPage() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMessage(null);
 
         if (!email || !password) {
-            toast.error('Please fill in all fields');
+            setErrorMessage('Please fill in all fields');
             return;
         }
 
@@ -36,7 +38,7 @@ export function LoginPage() {
             }
         } catch (error: any) {
             const message = error?.response?.data?.error || 'Login failed. Please try again.';
-            toast.error(message);
+            setErrorMessage(message);
         } finally {
             setIsLoading(false);
         }
@@ -87,6 +89,31 @@ export function LoginPage() {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Error Alert */}
+                            <AnimatePresence>
+                                {errorMessage && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10, height: 0 }}
+                                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                                        exit={{ opacity: 0, y: -10, height: 0 }}
+                                        className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-3"
+                                    >
+                                        <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-red-500">Login Failed</p>
+                                            <p className="text-sm text-red-400">{errorMessage}</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setErrorMessage(null)}
+                                            className="text-red-400 hover:text-red-300"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
                             <div className="space-y-2">
                                 <label htmlFor="email" className="text-sm font-medium text-foreground">
                                     Email

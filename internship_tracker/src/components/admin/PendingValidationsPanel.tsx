@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
     Loader2, CheckCircle2, Clock, ChevronDown, ChevronUp,
-    List, Grid3X3, AlertCircle, User as UserIcon, Calendar, Star
+    List, Grid3X3, AlertCircle, User as UserIcon, Calendar, Star, UserX
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,6 +30,7 @@ export function PendingValidationsPanel({ onSelectIntern, onRefresh }: PendingVa
     const [expandedInterns, setExpandedInterns] = useState<Set<string>>(new Set());
     const [validatingLogs, setValidatingLogs] = useState<Set<string>>(new Set());
     const [validationNotes, setValidationNotes] = useState<Record<string, string>>({});
+    const [assignedInternCount, setAssignedInternCount] = useState<number | null>(null);
 
     useEffect(() => {
         fetchPendingValidations();
@@ -40,6 +41,7 @@ export function PendingValidationsPanel({ onSelectIntern, onRefresh }: PendingVa
         try {
             const data = await adminApi.getAllPendingValidations();
             setLogs(data.logs);
+            setAssignedInternCount((data as any).assignedInternCount ?? null);
 
             // Process grouped data
             const groupedArray: GroupedPending[] = [];
@@ -115,6 +117,24 @@ export function PendingValidationsPanel({ onSelectIntern, onRefresh }: PendingVa
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
                 <CardContent className="py-12 flex items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Show message if no interns are assigned to this supervisor
+    if (assignedInternCount === 0) {
+        return (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                <CardContent className="py-12 text-center">
+                    <UserX className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground font-medium">No Interns Assigned</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        You don't have any interns assigned to you yet.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                        Contact the main admin to get interns assigned.
+                    </p>
                 </CardContent>
             </Card>
         );
