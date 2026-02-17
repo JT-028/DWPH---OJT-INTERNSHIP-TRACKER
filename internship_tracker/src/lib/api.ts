@@ -101,6 +101,12 @@ export const adminApi = {
         return data;
     },
 
+    // New: Bulk assign self as supervisor to all/unassigned interns (main admin only)
+    selfAssignAll: async (onlyUnassigned: boolean = true): Promise<{ assignedCount: number; totalInterns: number }> => {
+        const { data } = await api.put('/admin/self-assign-all', { onlyUnassigned });
+        return data;
+    },
+
     // New: Get all logs for a specific intern
     getInternLogs: async (internId: string): Promise<{ user: User; logs: DailyLog[] }> => {
         const { data } = await api.get(`/admin/users/${internId}/logs`);
@@ -116,6 +122,12 @@ export const adminApi = {
     // New: Get pending (unvalidated) logs for an intern
     getPendingLogs: async (internId: string): Promise<DailyLog[]> => {
         const { data } = await api.get(`/admin/users/${internId}/logs-pending`);
+        return data;
+    },
+
+    // New: Get all pending validations for dashboard (all assigned interns)
+    getAllPendingValidations: async (): Promise<{ logs: DailyLog[]; grouped: Record<string, DailyLog[]> }> => {
+        const { data } = await api.get('/admin/pending-validations');
         return data;
     },
 

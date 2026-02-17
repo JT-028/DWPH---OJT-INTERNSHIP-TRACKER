@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { adminApi } from '@/lib/api';
@@ -18,22 +17,23 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
     Users, Shield, ShieldCheck, UserPlus, Trash2, Search,
-    ArrowLeft, Loader2, ToggleLeft, ToggleRight,
-    Crown, UserCog, GraduationCap, Eye, FileText, UserCheck
+    Loader2, ToggleLeft, ToggleRight, LogOut,
+    Crown, UserCog, GraduationCap, Eye, FileText, UserCheck, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
     InternDetailsModal,
     SupervisorAssignment,
-    ReportsPanel
+    ReportsPanel,
+    PendingValidationsPanel
 } from '@/components/admin';
 
 export function AdminPage() {
-    const { user: currentUser, isAdmin } = useAuth();
-    const navigate = useNavigate();
+    const { user: currentUser, isAdmin, logout } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-    const [activeTab, setActiveTab] = useState<'users' | 'reports'>('users');
+    const [activeTab, setActiveTab] = useState<'pending' | 'users' | 'reports'>('pending');
     const [selectedIntern, setSelectedIntern] = useState<User | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isSupervisorOpen, setIsSupervisorOpen] = useState(false);
@@ -42,6 +42,7 @@ export function AdminPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newSubAdmin, setNewSubAdmin] = useState({ name: '', email: '', password: '' });
     const [isCreating, setIsCreating] = useState(false);
+    const [isSelfAssigning, setIsSelfAssigning] = useState(false);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -134,6 +135,19 @@ export function AdminPage() {
         }
     };
 
+    const handleSelfAssignAll = async (onlyUnassigned: boolean) => {
+        setIsSelfAssigning(true);
+        try {
+            const result = await adminApi.selfAssignAll(onlyUnassigned);
+            toast.success(`Assigned self as supervisor to ${result.assignedCount} intern(s)`);
+            fetchUsers(); // Refresh the user list
+        } catch (error: any) {
+            toast.error(error?.response?.data?.error || 'Failed to bulk assign');
+        } finally {
+            setIsSelfAssigning(false);
+        }
+    };
+
     const getRoleIcon = (role: string) => {
         switch (role) {
             case 'admin': return <Crown className="h-4 w-4 text-amber-500" />;
@@ -159,36 +173,133 @@ export function AdminPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Background */}
+            {/* Animated background elements & Base Background Color - Matching Intern Design */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-background">
                 <motion.div
-                    animate={{ scale: [1, 1.1, 1], x: [0, 20, 0] }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full bg-gradient-to-br from-amber-500/8 to-yellow-500/4 blur-3xl"
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.03, 0.06, 0.03],
+                    }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-primary rounded-full blur-3xl"
+                />
+                <motion.div
+                    animate={{
+                        scale: [1.2, 1, 1.2],
+                        opacity: [0.04, 0.08, 0.04],
+                    }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                    className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-green rounded-full blur-3xl"
+                />
+                <motion.div
+                    animate={{
+                        scale: [1, 1.1, 1],
+                        opacity: [0.02, 0.05, 0.02],
+                    }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+                    className="absolute top-1/3 left-1/3 w-1/3 h-1/3 bg-amber rounded-full blur-3xl"
+                />
+
+                {/* Paper plane background overlay - Repeating pattern */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        backgroundImage: 'url("/Paper_plane.png")',
+                        backgroundSize: '500px 500px',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'repeat',
+                        filter: 'invert(1) opacity(0.06)',
+                    }}
+                />
+                {/* Additional layer for dark mode - inverts back */}
+                <div
+                    className="absolute inset-0 pointer-events-none hidden dark:block"
+                    style={{
+                        backgroundImage: 'url("/Paper_plane.png")',
+                        backgroundSize: '500px 500px',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'repeat',
+                        opacity: 0.04,
+                    }}
                 />
             </div>
 
-            {/* Header */}
-            <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+            {/* Header - Matching Intern Design */}
+            <header className="sticky top-0 z-40 w-full bg-amber dark:bg-amber shadow-lg transition-all duration-300">
+                <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
+                    {/* Left Side - Title */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ type: "spring", stiffness: 100, damping: 12 }}
+                        className="flex items-center gap-2 flex-1"
+                    >
+                        <div>
+                            <h1 className="text-lg font-bold text-white">
+                                Admin Dashboard
+                            </h1>
+                            <p className="text-xs text-white/70">
+                                Manage users & validate logs 🛡️
+                            </p>
+                        </div>
+                    </motion.div>
+
+                    {/* Center - Logo (pops out) */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 100, damping: 12, delay: 0.1 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10"
+                    >
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="relative"
+                        >
+                            {/* Outer ring */}
+                            <div className="w-60 h-28 rounded-[60px] bg-amber dark:bg-amber border-6 border-amber dark:border-amber flex items-center justify-center shadow-xl">
+                                {/* Inner circle with logo */}
+                                <div className="w-56 h-24 rounded-[56px] bg-white dark:bg-slate-100 flex items-center justify-center overflow-hidden shadow-inner">
+                                    <img
+                                        src="/dw-logo.png"
+                                        alt="Digital Workforce"
+                                        className="w-40 h-40 object-contain"
+                                    />
+                                </div>
+                            </div>
+                            {/* Glow effect */}
+                            <motion.div
+                                animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.1, 0.3] }}
+                                transition={{ duration: 3, repeat: Infinity }}
+                                className="absolute inset-0 bg-white/20 rounded-full blur-md -z-10"
+                            />
+                        </motion.div>
+                    </motion.div>
+
+                    {/* Right Side - Admin Controls & Theme Toggle */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ type: "spring", stiffness: 100, damping: 12 }}
+                        className="flex-1 flex items-center justify-end gap-2"
+                    >
+                        <div className="flex items-center gap-1 text-white/80 text-xs">
+                            {getRoleIcon(currentUser?.role || 'intern')}
+                            <span className="hidden sm:inline">{currentUser?.name}</span>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 hover:bg-white/20 transition-colors duration-200">
+                            <ThemeToggle />
+                        </div>
                         <Button
                             variant="ghost"
-                            size="icon"
-                            onClick={() => navigate('/')}
-                            className="hover:bg-amber-500/10"
+                            size="sm"
+                            onClick={() => logout()}
+                            className="text-white/80 hover:text-white hover:bg-white/10 text-xs gap-1.5 h-8"
                         >
-                            <ArrowLeft className="h-5 w-5" />
+                            <LogOut className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Logout</span>
                         </Button>
-                        <div className="flex items-center gap-2">
-                            <Shield className="h-5 w-5 text-amber-500" />
-                            <h1 className="text-lg font-bold">Admin Dashboard</h1>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {getRoleIcon(currentUser?.role || 'intern')}
-                        <span>{currentUser?.name}</span>
-                    </div>
+                    </motion.div>
                 </div>
             </header>
 
@@ -225,6 +336,17 @@ export function AdminPage() {
                 {/* Tab Navigation */}
                 <div className="flex gap-2 border-b border-border/50">
                     <button
+                        onClick={() => setActiveTab('pending')}
+                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
+                            activeTab === 'pending'
+                                ? 'border-amber-500 text-amber-500'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Clock className="h-4 w-4 inline mr-2" />
+                        Pending Validations
+                    </button>
+                    <button
                         onClick={() => setActiveTab('users')}
                         className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
                             activeTab === 'users'
@@ -249,7 +371,15 @@ export function AdminPage() {
                 </div>
 
                 {/* Tab Content */}
-                {activeTab === 'reports' ? (
+                {activeTab === 'pending' ? (
+                    <PendingValidationsPanel 
+                        onSelectIntern={(intern) => {
+                            setSelectedIntern(intern);
+                            setIsDetailsOpen(true);
+                        }}
+                        onRefresh={fetchUsers}
+                    />
+                ) : activeTab === 'reports' ? (
                     <ReportsPanel users={users} />
                 ) : (
                 <>
@@ -265,13 +395,32 @@ export function AdminPage() {
                         />
                     </div>
                     {isAdmin && (
-                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25">
-                                    <UserPlus className="mr-2 h-4 w-4" />
-                                    Create Sub-Admin
-                                </Button>
-                            </DialogTrigger>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => handleSelfAssignAll(true)}
+                                disabled={isSelfAssigning}
+                                className="text-sm"
+                            >
+                                {isSelfAssigning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
+                                Assign Self (Unassigned)
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => handleSelfAssignAll(false)}
+                                disabled={isSelfAssigning}
+                                className="text-sm"
+                            >
+                                {isSelfAssigning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
+                                Assign Self (All)
+                            </Button>
+                            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25">
+                                        <UserPlus className="mr-2 h-4 w-4" />
+                                        Create Sub-Admin
+                                    </Button>
+                                </DialogTrigger>
                             <DialogContent className="sm:max-w-md">
                                 <DialogHeader>
                                     <DialogTitle>Create Sub-Admin Account</DialogTitle>
@@ -306,6 +455,7 @@ export function AdminPage() {
                                 </form>
                             </DialogContent>
                         </Dialog>
+                        </div>
                     )}
                 </div>
 

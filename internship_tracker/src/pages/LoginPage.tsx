@@ -26,9 +26,14 @@ export function LoginPage() {
 
         setIsLoading(true);
         try {
-            await login(email, password);
+            const loggedInUser = await login(email, password);
             toast.success('Welcome back!');
-            navigate('/');
+            // Redirect based on role
+            if (loggedInUser.role === 'admin' || loggedInUser.role === 'sub-admin') {
+                navigate('/admin');
+            } else {
+                navigate('/');
+            }
         } catch (error: any) {
             const message = error?.response?.data?.error || 'Login failed. Please try again.';
             toast.error(message);

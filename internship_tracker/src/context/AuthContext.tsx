@@ -10,7 +10,7 @@ interface AuthContextType {
     isAdmin: boolean;
     isSubAdmin: boolean;
     isAdminOrSubAdmin: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<User>;
     register: (name: string, email: string, password: string) => Promise<void>;
     logout: () => void;
 }
@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('auth_user', JSON.stringify(response.user));
         setToken(response.token);
         setUser(response.user);
+        return response.user; // Return user for role-based redirect
     }, []);
 
     const register = useCallback(async (name: string, email: string, password: string) => {

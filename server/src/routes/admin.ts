@@ -300,6 +300,47 @@ router.put('/users/:id/supervisors', requireAdmin, async (req: Request, res: Res
     }
 });
 
+// PUT /api/admin/self-assign-all - Assign self as supervisor to all/unassigned interns (main admin only)
+router.put('/self-assign-all', requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { onlyUnassigned } = req.body;
+        const currentUser = req.user!;
+
+        let query: any = { role: 'intern' };
+        
+        if (onlyUnassigned) {
+            // Only interns with no supervisors assigned
+            query.$or = [
+                { supervisors: { $exists: false } },
+                { supervisors: { $size: 0 } }
+            ];
+        }
+
+        const interns = await User.find(query);
+        let assigned = 0;
+
+        for (const intern of interns) {
+            const supervisors = intern.supervisors || [];
+            const alreadyAssigned = supervisors.some((s: any) => s.toString() === currentUser._id.toString());
+            
+            if (!alreadyAssigned) {
+                intern.supervisors = [...supervisors, currentUser._id];
+                await intern.save();
+                assigned++;
+            }
+        }
+
+        res.json({ 
+            message: `Assigned self as supervisor to ${assigned} intern(s)`,
+            assignedCount: assigned,
+            totalInterns: interns.length
+        });
+    } catch (error) {
+        console.error('Error bulk assigning:', error);
+        res.status(500).json({ error: 'Failed to bulk assign' });
+    }
+});
+
 // GET /api/admin/users/:id/logs - Get all logs for a specific intern
 router.get('/users/:id/logs', requireAdminOrSubAdmin, async (req: Request, res: Response) => {
     try {
@@ -366,6 +407,56 @@ router.get('/users/:id/logs/:date', requireAdminOrSubAdmin, async (req: Request,
     } catch (error) {
         console.error('Error fetching intern log:', error);
         res.status(500).json({ error: 'Failed to fetch intern log' });
+    }
+});
+
+// GET /api/admin/pending-validations - Get all pending logs for assigned interns (dashboard view)
+router.get('/pending-validations', requireAdminOrSubAdmin, async (req: Request, res: Response) => {
+    try {
+        const currentUser = req.user!;
+        let internIds: string[] = [];
+
+        if (currentUser.role === 'admin') {
+            // Main admin sees all interns
+            const interns = await User.find({ role: 'intern' }).select('_id');
+            internIds = interns.map(i => i._id.toString());
+        } else {
+            // Sub-admin only sees assigned interns
+            const assignedInterns = await User.find({
+                role: 'intern',
+                supervisors: currentUser._id
+            }).select('_id');
+            internIds = assignedInterns.map(i => i._id.toString());
+        }
+
+        if (internIds.length === 0) {
+            res.json({ logs: [], grouped: {} });
+            return;
+        }
+
+        const logs = await DailyLog.find({
+            userId: { $in: internIds },
+            status: 'completed',
+            isValidated: { $ne: true }
+        })
+            .sort({ date: -1 })
+            .populate('userId', 'name email')
+            .populate('markedByAdmin', 'name');
+
+        // Group logs by intern
+        const grouped: Record<string, any[]> = {};
+        logs.forEach(log => {
+            const internId = (log.userId as any)?._id?.toString() || log.userId?.toString();
+            if (!grouped[internId]) {
+                grouped[internId] = [];
+            }
+            grouped[internId].push(log);
+        });
+
+        res.json({ logs, grouped });
+    } catch (error) {
+        console.error('Error fetching pending validations:', error);
+        res.status(500).json({ error: 'Failed to fetch pending validations' });
     }
 });
 
