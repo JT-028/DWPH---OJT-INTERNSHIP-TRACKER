@@ -206,7 +206,7 @@ export function SetupSection({ settings, onSettingsChange, onReset, isLoading }:
                                                 <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/50 cursor-help" />
                                             </TooltipTrigger>
                                             <TooltipContent side="right">
-                                                Whether to exclude holidays from progress calculations
+                                                Excludes holidays from progress calculations only. You can still log work on holidays.
                                             </TooltipContent>
                                         </Tooltip>
                                     </div>

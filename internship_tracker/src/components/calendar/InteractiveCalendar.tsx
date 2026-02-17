@@ -17,7 +17,7 @@ interface InteractiveCalendarProps {
 
 const legends = [
     { label: "Today", className: "border-2 border-amber bg-amber/10", icon: null },
-    { label: "Holiday", className: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", icon: "★" },
+    { label: "Holiday (Loggable)", className: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", icon: "★" },
     { label: "Validated", className: "bg-emerald-500/20 border-2 border-emerald-500 text-emerald-600", icon: "✓" },
     { label: "Logged", className: "bg-green/10 border-2 border-green text-green", icon: "⌚" },
     { label: "Off", className: "bg-muted/40 text-muted-foreground/60", icon: null },
@@ -218,10 +218,10 @@ export function InteractiveCalendar({
                                     const holiday = isHoliday(day)
                                     const isSelected = selectedDate && isSameDay(day, selectedDate)
                                     const logData = getLogForDate(day)
-                                    // Logged days are always clickable
+                                    // Logged days are always clickable, holidays are also always clickable for logging
                                     const isClickable = status === "logged" || status === "validated" || 
-                                        (status !== "before-start" && status !== "non-workday" &&
-                                        !(status === "holiday" && settings.excludeHolidays))
+                                        status === "holiday" ||  // Always allow holiday logging regardless of settings
+                                        (status !== "before-start" && status !== "non-workday")
 
                                     return (
                                         <motion.button
@@ -236,7 +236,7 @@ export function InteractiveCalendar({
                                             title={
                                                 status === "before-start" ? "Before start date" :
                                                     status === "non-workday" ? "Non-workday" :
-                                                        status === "holiday" ? holiday?.name :
+                                                        status === "holiday" ? `${holiday?.name} - Click to log work` :
                                                             status === "validated" ? `Validated log - ${logData?.validationNotes || 'No notes'}` :
                                                                 status === "logged" ? "Pending validation" :
                                                                     undefined
@@ -246,7 +246,7 @@ export function InteractiveCalendar({
                                                 // Base states
                                                 status === "before-start" && "text-muted-foreground/30 line-through cursor-not-allowed bg-muted/20",
                                                 status === "non-workday" && "text-muted-foreground/40 cursor-not-allowed bg-muted/10",
-                                                status === "holiday" && "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 cursor-not-allowed",
+                                                status === "holiday" && "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-800/50",
                                                 status === "validated" && "bg-emerald-500/20 text-emerald-600 border-2 border-emerald-500 font-bold shadow-md",
                                                 status === "logged" && "bg-green/20 text-green border-2 border-green font-bold",
                                                 status === "today" && "border-2 border-amber bg-amber/10 font-bold shadow-md",
